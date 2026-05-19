@@ -42,7 +42,14 @@ function LoginForm() {
         remember: rememberMe,
       })
       setAuth(res.data.user, res.data.token)
-      router.push(from)
+      const pending = sessionStorage.getItem("nairaflow_pending_transfer")
+      if (pending) {
+        const { amount, currency } = JSON.parse(pending) as { amount: number; currency: string }
+        sessionStorage.removeItem("nairaflow_pending_transfer")
+        router.push(`/send?amount=${amount}&currency=${currency}`)
+      } else {
+        router.push(from)
+      }
     } catch (err) {
       setServerError(handleApiError(err))
     }

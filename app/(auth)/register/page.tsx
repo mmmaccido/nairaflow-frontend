@@ -84,7 +84,14 @@ export default function RegisterPage() {
         password_confirmation: data.confirmPassword,
       })
       setAuth(res.data.user, res.data.token)
-      router.push("/dashboard")
+      const pending = sessionStorage.getItem("nairaflow_pending_transfer")
+      if (pending) {
+        const { amount, currency } = JSON.parse(pending) as { amount: number; currency: string }
+        sessionStorage.removeItem("nairaflow_pending_transfer")
+        router.push(`/send?amount=${amount}&currency=${currency}`)
+      } else {
+        router.push("/dashboard")
+      }
     } catch (err) {
       setServerError(handleApiError(err))
     }
