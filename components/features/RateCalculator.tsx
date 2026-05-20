@@ -65,7 +65,7 @@ export function RateCalculator({ dark = false }: { dark?: boolean }) {
 
   const ngnAmount = parseNGN(ngnInput)
   const converted = rate && ngnAmount > 0 ? (ngnAmount / rate.our_rate).toFixed(2) : null
-  const fee = ngnAmount > 0 ? Math.max(500, ngnAmount * 0.005).toLocaleString("en-NG", { maximumFractionDigits: 0 }) : null
+  const fee = ngnAmount > 0 ? Math.min(Math.max(ngnAmount * 0.01, 500), 5000).toLocaleString("en-NG", { maximumFractionDigits: 0 }) : null
   const currencyMeta = CURRENCIES.find(c => c.code === currency)
 
   function handleSend() {
