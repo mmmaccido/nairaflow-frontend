@@ -6,9 +6,17 @@ import { COOKIE_NAME } from "@/lib/constants"
 
 export { COOKIE_NAME }
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL
+if (!apiUrl) {
+  throw new Error(
+    "NEXT_PUBLIC_API_URL is not defined. Add it to your .env.local (development) or set it in your deployment environment."
+  )
+}
+
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: apiUrl,
   timeout: 30000,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
