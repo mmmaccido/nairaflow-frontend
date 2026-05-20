@@ -140,6 +140,8 @@ interface RecipientFormProps {
   onSuccess: (recipient: Recipient) => void
   noSave?: boolean
   submitLabel?: string
+  defaultValues?: Partial<Recipient>
+  recipientId?: string
 }
 
 export function RecipientForm({
@@ -147,6 +149,8 @@ export function RecipientForm({
   onSuccess,
   noSave = false,
   submitLabel = "Save recipient →",
+  defaultValues: dv,
+  recipientId,
 }: RecipientFormProps) {
   const [serverError, setServerError] = useState("")
 
@@ -158,7 +162,13 @@ export function RecipientForm({
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { country_code: defaultCountry ?? "" },
+    defaultValues: {
+      country_code: dv?.country_code ?? defaultCountry ?? "",
+      first_name: dv?.first_name ?? "",
+      last_name: dv?.last_name ?? "",
+      email: "",
+      ...(dv?.bank_details ?? {}),
+    },
     mode: "onBlur",
   })
 
@@ -230,7 +240,9 @@ export function RecipientForm({
     }
 
     try {
-      const res = await apiClient.post<Recipient>("/recipients", payload)
+      const res = recipientId
+        ? await apiClient.put<Recipient>(`/recipients/${recipientId}`, payload)
+        : await apiClient.post<Recipient>("/recipients", payload)
       onSuccess(res.data)
     } catch (err) {
       setServerError(handleApiError(err))
