@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Check, X, Download, Globe, Building2, Truck, Smartphone, ArrowRightLeft } from "lucide-react"
+import { ArrowLeft, Check, X, Download, Globe, Building2, Truck, Smartphone, ArrowRightLeft, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -75,9 +75,37 @@ function DeliveryIcon({ type, className }: { type: string; className?: string })
 
 export default function TransactionDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const [tx, setTx]           = useState<Transaction | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
+  const [tx, setTx]                     = useState<Transaction | null>(null)
+  const [loading, setLoading]           = useState(true)
+  const [notFound, setNotFound]         = useState(false)
+  const [downloading, setDownloading]   = useState(false)
+
+  async function downloadReceipt() {
+    if (!tx) return
+    setDownloading(true)
+    try {
+      const res = await apiClient.get(`/transactions/${tx.id}/receipt`, {
+        responseType: "blob",
+      })
+      const url  = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }))
+      const link = document.createElement("a")
+      link.href  = url
+      link.download = `NairaFlow-Receipt-${tx.paystack_reference}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 422) {
+        toast.error("Receipt is only available for completed transactions.")
+      } else {
+        toast.error("Failed to download receipt. Please try again.")
+      }
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   useEffect(() => {
     if (!id) return
@@ -289,10 +317,13 @@ export default function TransactionDetailPage() {
           ← Back
         </Link>
         <button
-          onClick={() => toast("Receipt download coming soon")}
-          className="flex items-center justify-center gap-2 flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl transition-colors"
+          onClick={downloadReceipt}
+          disabled={downloading}
+          className="flex items-center justify-center gap-2 flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl transition-colors disabled:opacity-60"
         >
-          <Download className="size-4" />
+          {downloading
+            ? <Loader2 className="size-4 animate-spin" />
+            : <Download className="size-4" />}
           Download receipt
         </button>
       </div>
