@@ -125,8 +125,8 @@ function CurrenciesGrid() {
 
   useEffect(() => {
     apiClient
-      .get<Rate[]>("/rates")
-      .then((r) => setRates(r.data))
+      .get<{ rates: Rate[]; count: number }>("/rates")
+      .then((r) => setRates(r.data.rates ?? []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
