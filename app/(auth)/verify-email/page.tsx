@@ -29,12 +29,12 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <Card className="w-full max-w-sm shadow-sm text-center">
+    <Card className="w-full max-w-sm border-2 border-ink shadow-md text-center">
       <CardHeader>
         <div className="flex justify-center mb-2">
-          <MailCheck className="size-12 text-green-600" />
+          <MailCheck className="size-12 text-emerald" />
         </div>
-        <CardTitle className="text-xl font-sora">Check your inbox</CardTitle>
+        <CardTitle className="text-xl font-display">Check your inbox</CardTitle>
         <CardDescription>
           We sent a verification link to{" "}
           <strong>{user?.email ?? "your email address"}</strong>.
@@ -42,12 +42,12 @@ export default function VerifyEmailPage() {
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <p className="text-sm text-clay bg-clay/10 border border-clay/30 rounded-lg px-3 py-2">
             {error}
           </p>
         )}
         {resent ? (
-          <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+          <p className="text-sm text-emerald bg-emerald/10 border border-emerald/30 rounded-lg px-3 py-2">
             Verification email resent.
           </p>
         ) : (
@@ -67,8 +67,8 @@ export default function VerifyEmailPage() {
             )}
           </Button>
         )}
-        <p className="text-sm text-slate-500">
-          <Link href="/login" className="text-green-700 hover:underline">
+        <p className="text-sm text-muted-text">
+          <Link href="/login" className="text-emerald hover:underline">
             Back to login
           </Link>
         </p>

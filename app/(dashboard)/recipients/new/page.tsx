@@ -20,18 +20,18 @@ export default function NewRecipientPage() {
       <div className="flex items-center gap-4">
         <Link
           href="/recipients"
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted-text hover:text-ink transition-colors"
         >
           <ArrowLeft className="size-4" /> Back
         </Link>
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold font-sora text-slate-900 mb-0.5">Add recipient</h1>
-        <p className="text-slate-500 text-sm">Save bank details for future transfers.</p>
+        <h1 className="text-2xl font-bold font-display text-ink mb-0.5">Add recipient</h1>
+        <p className="text-muted-text text-sm">Save bank details for future transfers.</p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 p-6">
+      <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-6">
         <RecipientForm onSuccess={handleSuccess} submitLabel="Save recipient →" />
       </div>
     </div>

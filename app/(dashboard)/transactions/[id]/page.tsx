@@ -1,11 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ArrowLeft, Check, X, Download, Globe, Building2, Truck, Smartphone, ArrowRightLeft, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/lib/api"
+import { handleApiError } from "@/lib/handleApiError"
+import { ErrorAlert } from "@/components/shared/ErrorAlert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import type { Transaction } from "@/types/transaction"
@@ -25,12 +27,12 @@ const DELIVERY_LABELS: Record<string, string> = {
 }
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-  COMPLETED:  { color: "bg-green-100 text-green-700",   label: "Completed"  },
-  PROCESSING: { color: "bg-yellow-100 text-yellow-700", label: "Processing" },
-  PAID:       { color: "bg-blue-100 text-blue-600",     label: "Paid"       },
-  PENDING:    { color: "bg-slate-100 text-slate-600",   label: "Pending"    },
-  FAILED:     { color: "bg-red-100 text-red-700",       label: "Failed"     },
-  REFUNDED:   { color: "bg-purple-100 text-purple-700", label: "Refunded"   },
+  COMPLETED:  { color: "bg-emerald/10 text-emerald",     label: "Completed"  },
+  PROCESSING: { color: "bg-amber/15 text-amber",         label: "Processing" },
+  PAID:       { color: "bg-emerald/10 text-emerald",     label: "Paid"       },
+  PENDING:    { color: "bg-bone-deep text-muted-text",   label: "Pending"    },
+  FAILED:     { color: "bg-clay/10 text-clay",           label: "Failed"     },
+  REFUNDED:   { color: "bg-sage/20 text-emerald-light",  label: "Refunded"   },
 }
 
 const TIMELINE = ["Initiated", "Payment Received", "Processing", "Completed"]
@@ -78,6 +80,7 @@ export default function TransactionDetailPage() {
   const [tx, setTx]                     = useState<Transaction | null>(null)
   const [loading, setLoading]           = useState(true)
   const [notFound, setNotFound]         = useState(false)
+  const [error, setError]               = useState<string | null>(null)
   const [downloading, setDownloading]   = useState(false)
 
   async function downloadReceipt() {
@@ -107,14 +110,25 @@ export default function TransactionDetailPage() {
     }
   }
 
-  useEffect(() => {
+  const loadTransaction = useCallback(async () => {
     if (!id) return
-    apiClient
-      .get<Transaction>(`/transactions/${id}`)
-      .then((r) => setTx(r.data))
-      .catch((e) => { if (e?.response?.status === 404) setNotFound(true) })
-      .finally(() => setLoading(false))
+    setLoading(true)
+    setError(null)
+    try {
+      const r = await apiClient.get<Transaction>(`/transactions/${id}`)
+      setTx(r.data)
+    } catch (e) {
+      if ((e as { response?: { status?: number } })?.response?.status === 404) {
+        setNotFound(true)
+      } else {
+        setError(handleApiError(e))
+      }
+    } finally {
+      setLoading(false)
+    }
   }, [id])
+
+  useEffect(() => { loadTransaction() }, [loadTransaction])
 
   if (loading) {
     return (
@@ -127,11 +141,22 @@ export default function TransactionDetailPage() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="max-w-2xl space-y-5">
+        <Link href="/transactions" className="flex items-center gap-1.5 text-sm text-muted-text hover:text-ink transition-colors">
+          <ArrowLeft className="size-4" /> Back
+        </Link>
+        <ErrorAlert message={error} onRetry={loadTransaction} />
+      </div>
+    )
+  }
+
   if (notFound || !tx) {
     return (
       <div className="text-center py-16">
-        <p className="text-slate-500 text-sm mb-4">Transaction not found.</p>
-        <Link href="/transactions" className="text-green-700 hover:underline text-sm font-medium">
+        <p className="text-muted-text text-sm mb-4">Transaction not found.</p>
+        <Link href="/transactions" className="text-emerald hover:underline text-sm font-medium">
           ← Back to transactions
         </Link>
       </div>
@@ -145,7 +170,7 @@ export default function TransactionDetailPage() {
     <div className="max-w-2xl space-y-5">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/transactions" className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+        <Link href="/transactions" className="flex items-center gap-1.5 text-sm text-muted-text hover:text-ink transition-colors">
           <ArrowLeft className="size-4" /> Back
         </Link>
         <span className={cn("inline-flex text-xs font-medium px-2.5 py-1 rounded-full", statusCfg.color)}>
@@ -154,13 +179,13 @@ export default function TransactionDetailPage() {
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold font-sora text-slate-900 mb-0.5">Transfer details</h1>
-        <p className="text-xs text-slate-400">Ref: {tx.paystack_reference}</p>
+        <h1 className="text-2xl font-bold font-display text-ink mb-0.5">Transfer details</h1>
+        <p className="text-xs text-muted-text">Ref: {tx.paystack_reference}</p>
       </div>
 
       {/* Status timeline */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-5">Transfer progress</h2>
+      <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-ink-soft mb-5">Transfer progress</h2>
         <div className="flex items-start gap-0">
           {steps.map((label, i) => {
             const state = getTimelineState(tx.status, i)
@@ -172,10 +197,10 @@ export default function TransactionDetailPage() {
                   <div
                     className={cn(
                       "size-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all",
-                      state === "done"   ? "bg-green-600 border-green-600 text-white" :
-                      state === "active" ? "bg-green-600 border-green-600 text-white" :
-                      state === "failed" ? "bg-red-500 border-red-500 text-white" :
-                      "bg-white border-slate-300 text-slate-400"
+                      state === "done"   ? "bg-emerald border-emerald text-bone" :
+                      state === "active" ? "bg-emerald border-emerald text-bone" :
+                      state === "failed" ? "bg-clay border-clay text-bone" :
+                      "bg-paper border-bone-deep text-muted-text"
                     )}
                   >
                     {state === "done"   ? <Check className="size-4 stroke-[2.5]" /> :
@@ -187,7 +212,7 @@ export default function TransactionDetailPage() {
                     <div className={cn(
                       "flex-1 h-0.5 mx-1",
                       i < ({"PENDING":0,"PAID":1,"PROCESSING":2,"COMPLETED":3,"REFUNDED":3,"FAILED":1}[tx.status] ?? 0)
-                        ? "bg-green-600" : "bg-slate-200"
+                        ? "bg-emerald" : "bg-bone-deep"
                     )} />
                   )}
                 </div>
@@ -195,16 +220,16 @@ export default function TransactionDetailPage() {
                 <div className="mt-2 text-center px-0.5">
                   <p className={cn(
                     "text-xs font-medium",
-                    state === "done" || state === "active" ? "text-slate-900" :
-                    state === "failed" ? "text-red-600" : "text-slate-400"
+                    state === "done" || state === "active" ? "text-ink" :
+                    state === "failed" ? "text-clay" : "text-muted-text"
                   )}>
                     {label}
                   </p>
                   {i === 0 && (
-                    <p className="text-xs text-slate-400 mt-0.5">{formatDateTime(tx.created_at)}</p>
+                    <p className="text-xs text-muted-text mt-0.5">{formatDateTime(tx.created_at)}</p>
                   )}
                   {i === steps.length - 1 && (state === "done" || state === "failed") && (
-                    <p className="text-xs text-slate-400 mt-0.5">{formatDateTime(tx.updated_at)}</p>
+                    <p className="text-xs text-muted-text mt-0.5">{formatDateTime(tx.updated_at)}</p>
                   )}
                 </div>
               </div>
@@ -214,52 +239,52 @@ export default function TransactionDetailPage() {
       </div>
 
       {/* Summary */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">Summary</h2>
+      <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-ink-soft mb-4">Summary</h2>
         <div className="flex justify-between text-sm">
-          <span className="text-slate-500">You sent</span>
-          <span className="font-semibold text-slate-900">₦{tx.ngn_amount.toLocaleString("en-NG")}</span>
+          <span className="text-muted-text">You sent</span>
+          <span className="font-semibold text-ink">₦{Number(tx.ngn_amount).toLocaleString("en-NG")}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-slate-500">Recipient gets</span>
-          <span className="font-semibold text-green-700">{tx.target_amount.toFixed(2)} {tx.target_currency}</span>
+          <span className="text-muted-text">Recipient gets</span>
+          <span className="font-semibold text-emerald">{Number(tx.target_amount).toFixed(2)} {tx.target_currency}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-slate-500">Fee</span>
-          <span className="text-slate-700">₦{tx.fee.toLocaleString("en-NG")}</span>
+          <span className="text-muted-text">Fee</span>
+          <span className="text-ink-soft">₦{Number(tx.fee).toLocaleString("en-NG")}</span>
         </div>
-        <div className="flex justify-between text-sm border-t border-slate-100 pt-3">
-          <span className="text-slate-500 font-medium">Total deducted</span>
-          <span className="font-bold text-slate-900">₦{(tx.ngn_amount + tx.fee).toLocaleString("en-NG")}</span>
+        <div className="flex justify-between text-sm border-t border-bone-deep pt-3">
+          <span className="text-muted-text font-medium">Total deducted</span>
+          <span className="font-bold text-ink">₦{(Number(tx.ngn_amount) + Number(tx.fee)).toLocaleString("en-NG")}</span>
         </div>
         <div className="flex justify-between text-sm pt-1">
-          <span className="text-slate-500">Rate used</span>
-          <span className="text-slate-700">₦{tx.rate_ngn_to_target.toLocaleString("en-NG")} / {tx.target_currency}</span>
+          <span className="text-muted-text">Rate used</span>
+          <span className="text-ink-soft">₦{Number(tx.rate_ngn_to_target).toLocaleString("en-NG")} / {tx.target_currency}</span>
         </div>
         <div className="flex justify-between text-sm items-center">
-          <span className="text-slate-500">Delivery method</span>
-          <span className="flex items-center gap-1.5 text-slate-700">
-            <DeliveryIcon type={tx.delivery_type} className="size-3.5 text-slate-400" />
+          <span className="text-muted-text">Delivery method</span>
+          <span className="flex items-center gap-1.5 text-ink-soft">
+            <DeliveryIcon type={tx.delivery_type} className="size-3.5 text-muted-text" />
             {DELIVERY_LABELS[tx.delivery_type] ?? tx.delivery_type}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-slate-500">Date</span>
-          <span className="text-slate-700">{formatDateTime(tx.created_at)}</span>
+          <span className="text-muted-text">Date</span>
+          <span className="text-ink-soft">{formatDateTime(tx.created_at)}</span>
         </div>
       </div>
 
       {/* Recipient details */}
       {tx.recipient && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4">Recipient</h2>
+        <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-ink-soft mb-4">Recipient</h2>
           <div className="flex items-center gap-3 mb-4">
-            <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center text-lg">
+            <div className="size-10 rounded-full bg-bone-deep flex items-center justify-center text-lg">
               {COUNTRY_FLAGS[tx.recipient.country_code] ?? "🌍"}
             </div>
             <div>
-              <p className="font-semibold text-slate-900">{tx.recipient.first_name} {tx.recipient.last_name}</p>
-              <p className="text-xs text-slate-500">{tx.recipient.country_code} · {tx.recipient.currency}</p>
+              <p className="font-semibold text-ink">{tx.recipient.first_name} {tx.recipient.last_name}</p>
+              <p className="text-xs text-muted-text">{tx.recipient.country_code} · {tx.recipient.currency}</p>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -272,8 +297,8 @@ export default function TransactionDetailPage() {
                   : String(val)
                 return (
                   <div key={key} className="flex justify-between text-sm">
-                    <span className="text-slate-500">{label}</span>
-                    <span className="font-mono text-slate-700">{masked}</span>
+                    <span className="text-muted-text">{label}</span>
+                    <span className="font-mono text-ink-soft">{masked}</span>
                   </div>
                 )
               })}
@@ -283,18 +308,18 @@ export default function TransactionDetailPage() {
 
       {/* Agent info (cash delivery) */}
       {tx.delivery_type === "CASH_PICKUP" && tx.agent && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-3">Cash delivery agent</h2>
+        <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-ink-soft mb-3">Cash delivery agent</h2>
           <div className="space-y-1.5 text-sm">
             {tx.agent.user && (
               <div className="flex justify-between">
-                <span className="text-slate-500">Agent name</span>
-                <span className="text-slate-700">{tx.agent.user.first_name} {tx.agent.user.last_name}</span>
+                <span className="text-muted-text">Agent name</span>
+                <span className="text-ink-soft">{tx.agent.user.first_name} {tx.agent.user.last_name}</span>
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-slate-500">City</span>
-              <span className="text-slate-700">{tx.agent.city}</span>
+              <span className="text-muted-text">City</span>
+              <span className="text-ink-soft">{tx.agent.city}</span>
             </div>
           </div>
         </div>
@@ -302,9 +327,9 @@ export default function TransactionDetailPage() {
 
       {/* Notes */}
       {tx.notes && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
-          <p className="text-xs font-medium text-amber-700 mb-1">Note</p>
-          <p className="text-sm text-amber-800">{tx.notes}</p>
+        <div className="bg-amber/10 border border-amber/30 rounded-xl px-4 py-3">
+          <p className="text-xs font-medium text-amber mb-1">Note</p>
+          <p className="text-sm text-ink">{tx.notes}</p>
         </div>
       )}
 
@@ -312,14 +337,14 @@ export default function TransactionDetailPage() {
       <div className="flex gap-3 pb-6">
         <Link
           href="/transactions"
-          className="flex-1 text-center border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm py-2.5 rounded-xl transition-colors"
+          className="flex-1 text-center border border-bone-deep text-ink-soft hover:bg-bone font-semibold text-sm py-2.5 rounded-xl transition-colors"
         >
           ← Back
         </Link>
         <button
           onClick={downloadReceipt}
           disabled={downloading}
-          className="flex items-center justify-center gap-2 flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl transition-colors disabled:opacity-60"
+          className="flex items-center justify-center gap-2 flex-1 bg-bone-deep hover:bg-bone text-ink font-semibold text-sm py-2.5 rounded-xl transition-colors disabled:opacity-60 border border-bone-deep"
         >
           {downloading
             ? <Loader2 className="size-4 animate-spin" />

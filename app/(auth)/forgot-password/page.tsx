@@ -31,9 +31,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <Card className="w-full max-w-sm shadow-sm">
+    <Card className="w-full max-w-sm border-2 border-ink shadow-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-xl font-sora">Reset your password</CardTitle>
+        <CardTitle className="text-xl font-display">Reset your password</CardTitle>
         <CardDescription>
           {sent
             ? "Check your inbox for a reset link."
@@ -43,18 +43,18 @@ export default function ForgotPasswordPage() {
       <CardContent>
         {sent ? (
           <div className="flex flex-col items-center gap-4 py-4">
-            <MailCheck className="size-12 text-green-600" />
-            <p className="text-sm text-slate-600 text-center">
-              We sent a password reset link to <strong>{email}</strong>.
+            <MailCheck className="size-12 text-emerald" />
+            <p className="text-sm text-ink-soft text-center">
+              We sent a password reset link to <strong className="text-ink">{email}</strong>.
             </p>
-            <Link href="/login" className="text-sm text-green-700 hover:underline font-medium">
+            <Link href="/login" className="text-sm text-emerald hover:underline font-medium">
               Back to login
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <p className="text-sm text-clay bg-clay/10 border border-clay/30 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-ink hover:bg-ink-soft text-bone"
             >
               {loading ? (
                 <>
@@ -84,8 +84,8 @@ export default function ForgotPasswordPage() {
                 "Send reset link"
               )}
             </Button>
-            <p className="text-center text-sm text-slate-500">
-              <Link href="/login" className="text-green-700 hover:underline">
+            <p className="text-center text-sm text-muted-text">
+              <Link href="/login" className="text-emerald hover:underline">
                 Back to login
               </Link>
             </p>

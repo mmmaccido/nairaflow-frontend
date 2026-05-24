@@ -29,14 +29,14 @@ function AdminNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-5 py-5 border-b border-slate-100">
+      <div className="px-5 py-5 border-b border-bone-deep">
         <Link href="/admin" className="flex items-center gap-2" onClick={onNavigate}>
-          <div className="size-8 rounded-full bg-slate-800 flex items-center justify-center">
-            <ShieldCheck className="size-4 text-white" />
+          <div className="size-8 rounded-full bg-ink flex items-center justify-center">
+            <ShieldCheck className="size-4 text-bone" />
           </div>
           <div>
-            <span className="text-slate-900 font-semibold font-sora text-sm">NairaFlow</span>
-            <p className="text-xs text-slate-500 -mt-0.5">Admin panel</p>
+            <span className="text-ink font-semibold font-display text-sm">NairaFlow</span>
+            <p className="text-xs text-muted-text -mt-0.5">Admin panel</p>
           </div>
         </Link>
       </div>
@@ -52,8 +52,8 @@ function AdminNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors border-l-4 pl-2.5",
                 active
-                  ? "bg-slate-800 text-white border-slate-800"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-transparent"
+                  ? "bg-ink text-bone border-ink"
+                  : "text-ink-soft hover:bg-bone hover:text-ink border-transparent"
               )}
             >
               <Icon className="size-4 flex-shrink-0" />
@@ -61,11 +61,11 @@ function AdminNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
             </Link>
           )
         })}
-        <div className="pt-3 border-t border-slate-100 mt-3">
+        <div className="pt-3 border-t border-bone-deep mt-3">
           <Link
             href="/dashboard"
             onClick={onNavigate}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors border-l-4 border-transparent pl-2.5"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-text hover:bg-bone hover:text-ink transition-colors border-l-4 border-transparent pl-2.5"
           >
             <LayoutDashboard className="size-4 flex-shrink-0" />
             User dashboard
@@ -73,24 +73,24 @@ function AdminNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
         </div>
       </nav>
 
-      <div className="px-4 py-4 border-t border-slate-100">
+      <div className="px-4 py-4 border-t border-bone-deep">
         {user && (
           <div className="flex items-center gap-3 mb-3">
             <Avatar className="size-9">
-              <AvatarFallback className="bg-slate-800 text-white text-xs font-semibold">
+              <AvatarFallback className="bg-ink text-bone text-xs font-semibold">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-slate-800 truncate">{user.first_name} {user.last_name}</p>
-              <p className="text-xs text-slate-500 truncate">{user.email}</p>
+              <p className="text-sm font-medium text-ink truncate">{user.first_name} {user.last_name}</p>
+              <p className="text-xs text-muted-text truncate">{user.email}</p>
             </div>
           </div>
         )}
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-slate-600 hover:text-red-600 hover:bg-red-50 gap-2"
+          className="w-full justify-start text-ink-soft hover:text-clay hover:bg-clay/10 gap-2"
           onClick={handleLogout}
         >
           <LogOut className="size-4" />
@@ -106,16 +106,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-bone">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 flex-shrink-0 flex-col bg-white border-r border-slate-100 min-h-screen sticky top-0 max-h-screen">
+      <aside className="hidden md:flex w-64 flex-shrink-0 flex-col bg-paper border-r border-bone-deep min-h-screen sticky top-0 max-h-screen">
         <AdminNav pathname={pathname} />
       </aside>
 
       {/* Mobile sheet */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger className="md:hidden fixed top-3 left-3 z-50 bg-white shadow-sm border border-slate-200 p-2 rounded-md">
-          <Menu className="size-5 text-slate-700" />
+        <SheetTrigger className="md:hidden fixed top-3 left-3 z-50 bg-paper shadow-sm border border-bone-deep p-2 rounded-md">
+          <Menu className="size-5 text-ink-soft" />
           <span className="sr-only">Open menu</span>
         </SheetTrigger>
         <SheetContent side="left" className="p-0 w-64">

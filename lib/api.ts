@@ -2,6 +2,7 @@
 
 import axios from "axios"
 import Cookies from "js-cookie"
+import { toast } from "sonner"
 import { COOKIE_NAME } from "@/lib/constants"
 
 export { COOKIE_NAME }
@@ -32,7 +33,7 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-// On 401: clear auth and redirect to login
+// On 401: clear auth and redirect to login. On 429: surface rate-limit toast.
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -41,6 +42,8 @@ apiClient.interceptors.response.use(
       if (typeof window !== "undefined") {
         window.location.href = "/login"
       }
+    } else if (error.response?.status === 429) {
+      toast.error("Too many requests. Please wait a moment.")
     }
     return Promise.reject(error)
   }

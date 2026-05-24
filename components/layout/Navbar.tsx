@@ -26,10 +26,10 @@ const NAV_LINKS = [
 function NavLogo() {
   return (
     <Link href="/" className="flex items-center gap-2">
-      <div className="size-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-        <span className="text-white font-bold text-sm font-sora">N</span>
+      <div className="size-8 rounded-lg bg-emerald flex items-center justify-center flex-shrink-0">
+        <span className="text-bone font-bold text-sm font-display">N</span>
       </div>
-      <span className="text-slate-900 font-semibold text-lg font-sora hidden sm:block">NairaFlow</span>
+      <span className="text-ink font-semibold text-lg font-display hidden sm:block">NairaFlow</span>
     </Link>
   )
 }
@@ -47,8 +47,8 @@ function NavLinks({ pathname, onClick }: { pathname: string; onClick?: () => voi
             className={cn(
               "text-sm font-medium transition-colors py-1",
               active
-                ? "text-green-700 border-b-2 border-green-600"
-                : "text-slate-600 hover:text-slate-900"
+                ? "text-emerald border-b-2 border-emerald"
+                : "text-ink-soft hover:text-ink"
             )}
           >
             {label}
@@ -75,7 +75,7 @@ export function Navbar() {
     : "?"
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
+    <header className="sticky top-0 z-40 bg-paper border-b border-bone-deep shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-6">
         <NavLogo />
 
@@ -88,10 +88,10 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {isAuthenticated && user ? (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full hover:bg-slate-50 px-2 py-1 transition-colors">
-                <span className="text-sm text-slate-700 font-medium">{user.first_name}</span>
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full hover:bg-bone px-2 py-1 transition-colors">
+                <span className="text-sm text-ink-soft font-medium">{user.first_name}</span>
                 <Avatar className="size-8">
-                  <AvatarFallback className="bg-green-100 text-green-700 text-xs font-semibold">
+                  <AvatarFallback className="bg-emerald/15 text-emerald text-xs font-semibold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -100,14 +100,13 @@ export function Navbar() {
                 <DropdownMenuItem onClick={() => router.push("/dashboard")}>
                   Dashboard
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+                <DropdownMenuItem onClick={() => router.push("/settings")}>
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  data-variant="destructive"
-                  className="text-red-600 focus:text-red-600"
+                  className="text-clay focus:text-clay"
                 >
                   Log out
                 </DropdownMenuItem>
@@ -117,13 +116,13 @@ export function Navbar() {
             <>
               <Link
                 href="/login"
-                className={cn(buttonVariants({ variant: "ghost" }), "text-slate-700")}
+                className={cn(buttonVariants({ variant: "ghost" }), "text-ink-soft")}
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className={cn(buttonVariants(), "bg-green-600 hover:bg-green-700 text-white border-green-600")}
+                className={cn(buttonVariants(), "bg-emerald hover:bg-emerald-deep text-bone border-emerald")}
               >
                 Get Started
               </Link>
@@ -133,41 +132,41 @@ export function Navbar() {
 
         {/* Mobile hamburger */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger className="md:hidden inline-flex items-center justify-center size-8 rounded-md hover:bg-slate-100 transition-colors">
-            <Menu className="size-5 text-slate-700" />
+          <SheetTrigger className="md:hidden inline-flex items-center justify-center size-8 rounded-md hover:bg-bone transition-colors">
+            <Menu className="size-5 text-ink-soft" />
             <span className="sr-only">Menu</span>
           </SheetTrigger>
           <SheetContent side="right" className="w-72 pt-10">
             <nav className="flex flex-col gap-5 px-2">
               <NavLinks pathname={pathname} onClick={() => setMobileOpen(false)} />
-              <div className="border-t pt-4 flex flex-col gap-2">
+              <div className="border-t border-bone-deep pt-4 flex flex-col gap-2">
                 {isAuthenticated && user ? (
                   <>
                     <div className="flex items-center gap-2 mb-2">
                       <Avatar className="size-8">
-                        <AvatarFallback className="bg-green-100 text-green-700 text-xs font-semibold">
+                        <AvatarFallback className="bg-emerald/15 text-emerald text-xs font-semibold">
                           {initials}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium text-slate-800">{user.first_name}</span>
+                      <span className="text-sm font-medium text-ink">{user.first_name}</span>
                     </div>
                     <Link
                       href="/dashboard"
                       onClick={() => setMobileOpen(false)}
-                      className="text-sm text-slate-700 py-1.5 hover:text-slate-900"
+                      className="text-sm text-ink-soft py-1.5 hover:text-ink"
                     >
                       Dashboard
                     </Link>
                     <Link
-                      href="/dashboard/settings"
+                      href="/settings"
                       onClick={() => setMobileOpen(false)}
-                      className="text-sm text-slate-700 py-1.5 hover:text-slate-900"
+                      className="text-sm text-ink-soft py-1.5 hover:text-ink"
                     >
                       Settings
                     </Link>
                     <button
                       onClick={() => { setMobileOpen(false); handleLogout() }}
-                      className="text-sm text-red-600 py-1.5 text-left hover:text-red-700"
+                      className="text-sm text-clay py-1.5 text-left hover:text-clay-deep"
                     >
                       Log out
                     </button>
@@ -177,14 +176,14 @@ export function Navbar() {
                     <Link
                       href="/login"
                       onClick={() => setMobileOpen(false)}
-                      className={cn(buttonVariants({ variant: "ghost" }), "justify-start text-slate-700 w-full")}
+                      className={cn(buttonVariants({ variant: "ghost" }), "justify-start text-ink-soft w-full")}
                     >
                       Login
                     </Link>
                     <Link
                       href="/register"
                       onClick={() => setMobileOpen(false)}
-                      className={cn(buttonVariants(), "bg-green-600 hover:bg-green-700 text-white border-green-600 w-full justify-center")}
+                      className={cn(buttonVariants(), "bg-emerald hover:bg-emerald-deep text-bone border-emerald w-full justify-center")}
                     >
                       Get Started
                     </Link>

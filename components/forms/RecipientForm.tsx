@@ -67,6 +67,7 @@ const schema = z
     branchCode: z.string().optional(),
     provider: z.string().optional(),
     mobileNumber: z.string().optional(),
+    recipientName: z.string().optional(),
     phone: z.string().optional(),
     address: z.string().optional(),
     city: z.string().optional(),
@@ -127,6 +128,7 @@ const schema = z
       fmt("mobileNumber", data.mobileNumber, /^\d{10}$/, "Must be 10 digits")
     }
     if (group === "NG") {
+      req("recipientName", data.recipientName, "Recipient name required")
       req("phone", data.phone, "Phone number required")
       req("address", data.address, "Address required")
       req("city", data.city, "City required")
@@ -219,6 +221,7 @@ export function RecipientForm({
       bank_details.provider = data.provider!
       bank_details.mobileNumber = data.mobileNumber!
     } else if (group === "NG") {
+      bank_details.recipientName = data.recipientName!
       bank_details.phone = data.phone!
       bank_details.address = data.address!
       bank_details.city = data.city!
@@ -251,13 +254,13 @@ export function RecipientForm({
 
   const err = (field: keyof FormValues) =>
     errors[field]?.message ? (
-      <p className="text-xs text-red-600 mt-0.5">{errors[field]!.message}</p>
+      <p className="text-xs text-clay mt-0.5">{errors[field]!.message}</p>
     ) : null
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {serverError && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+        <p className="text-sm text-clay bg-clay/10 border border-clay/30 rounded-lg px-3 py-2">
           {serverError}
         </p>
       )}
@@ -300,15 +303,15 @@ export function RecipientForm({
       </div>
 
       <div>
-        <Label htmlFor="rf_email" className="mb-1.5 block">Email <span className="text-slate-400 font-normal">(optional)</span></Label>
+        <Label htmlFor="rf_email" className="mb-1.5 block">Email <span className="text-muted-text font-normal">(optional)</span></Label>
         <Input id="rf_email" type="email" placeholder="john@example.com" {...register("email")} />
         {err("email")}
       </div>
 
       {/* Country-specific bank fields */}
       {countryCode && (
-        <div className="space-y-3 pt-2 border-t border-slate-100">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Bank details</p>
+        <div className="space-y-3 pt-2 border-t border-bone-deep">
+          <p className="text-xs font-medium text-muted-text uppercase tracking-wide">Bank details</p>
 
           {/* US */}
           {group === "US" && (
@@ -321,7 +324,7 @@ export function RecipientForm({
               <div>
                 <Label className="mb-1.5 block">
                   Routing number
-                  <span className="text-slate-400 font-normal ml-1 text-xs">(9-digit number on bottom of check)</span>
+                  <span className="text-muted-text font-normal ml-1 text-xs">(9-digit number on bottom of check)</span>
                 </Label>
                 <Input type="text" inputMode="numeric" maxLength={9} placeholder="123456789" {...register("routingNumber")} />
                 {err("routingNumber")}
@@ -339,12 +342,12 @@ export function RecipientForm({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="mb-1.5 block">Transit number <span className="text-slate-400 font-normal text-xs">(5 digits)</span></Label>
+                  <Label className="mb-1.5 block">Transit number <span className="text-muted-text font-normal text-xs">(5 digits)</span></Label>
                   <Input type="text" inputMode="numeric" maxLength={5} {...register("transitNumber")} />
                   {err("transitNumber")}
                 </div>
                 <div>
-                  <Label className="mb-1.5 block">Institution number <span className="text-slate-400 font-normal text-xs">(3 digits)</span></Label>
+                  <Label className="mb-1.5 block">Institution number <span className="text-muted-text font-normal text-xs">(3 digits)</span></Label>
                   <Input type="text" inputMode="numeric" maxLength={3} {...register("institutionNumber")} />
                   {err("institutionNumber")}
                 </div>
@@ -356,12 +359,12 @@ export function RecipientForm({
           {group === "GB" && (
             <>
               <div>
-                <Label className="mb-1.5 block">Account number <span className="text-slate-400 font-normal text-xs">(8 digits)</span></Label>
+                <Label className="mb-1.5 block">Account number <span className="text-muted-text font-normal text-xs">(8 digits)</span></Label>
                 <Input type="text" inputMode="numeric" maxLength={8} {...register("accountNumber")} />
                 {err("accountNumber")}
               </div>
               <div>
-                <Label className="mb-1.5 block">Sort code <span className="text-slate-400 font-normal text-xs">(XX-XX-XX)</span></Label>
+                <Label className="mb-1.5 block">Sort code <span className="text-muted-text font-normal text-xs">(XX-XX-XX)</span></Label>
                 <Input
                   type="text"
                   inputMode="numeric"
@@ -378,7 +381,7 @@ export function RecipientForm({
           {group === "SEPA" && (
             <>
               <div>
-                <Label className="mb-1.5 block">IBAN <span className="text-slate-400 font-normal text-xs">(starts with 2-letter country code)</span></Label>
+                <Label className="mb-1.5 block">IBAN <span className="text-muted-text font-normal text-xs">(starts with 2-letter country code)</span></Label>
                 <Input
                   type="text"
                   placeholder="DE89370400440532013000"
@@ -388,7 +391,7 @@ export function RecipientForm({
                 {err("iban")}
               </div>
               <div>
-                <Label className="mb-1.5 block">BIC / SWIFT <span className="text-slate-400 font-normal">(optional)</span></Label>
+                <Label className="mb-1.5 block">BIC / SWIFT <span className="text-muted-text font-normal">(optional)</span></Label>
                 <Input type="text" placeholder="DEUTDEDB" {...register("bic")} onChange={(e) => setValue("bic", e.target.value.toUpperCase())} />
                 {err("bic")}
               </div>
@@ -404,7 +407,7 @@ export function RecipientForm({
                 {err("accountNumber")}
               </div>
               <div>
-                <Label className="mb-1.5 block">BSB <span className="text-slate-400 font-normal text-xs">(6 digits)</span></Label>
+                <Label className="mb-1.5 block">BSB <span className="text-muted-text font-normal text-xs">(6 digits)</span></Label>
                 <Input type="text" inputMode="numeric" maxLength={6} placeholder="063000" {...register("bsb")} />
                 {err("bsb")}
               </div>
@@ -420,7 +423,7 @@ export function RecipientForm({
                 {err("accountNumber")}
               </div>
               <div>
-                <Label className="mb-1.5 block">Branch code <span className="text-slate-400 font-normal text-xs">(6 digits)</span></Label>
+                <Label className="mb-1.5 block">Branch code <span className="text-muted-text font-normal text-xs">(6 digits)</span></Label>
                 <Input type="text" inputMode="numeric" maxLength={6} {...register("branchCode")} />
                 {err("branchCode")}
               </div>
@@ -448,7 +451,7 @@ export function RecipientForm({
                 {err("provider")}
               </div>
               <div>
-                <Label className="mb-1.5 block">Mobile number <span className="text-slate-400 font-normal text-xs">(10 digits)</span></Label>
+                <Label className="mb-1.5 block">Mobile number <span className="text-muted-text font-normal text-xs">(10 digits)</span></Label>
                 <Input type="text" inputMode="numeric" maxLength={10} {...register("mobileNumber")} />
                 {err("mobileNumber")}
               </div>
@@ -458,6 +461,11 @@ export function RecipientForm({
           {/* NG — Cash Delivery */}
           {group === "NG" && (
             <>
+              <div>
+                <Label className="mb-1.5 block">Recipient name</Label>
+                <Input type="text" placeholder="Full name of cash recipient" {...register("recipientName")} />
+                {err("recipientName")}
+              </div>
               <div>
                 <Label className="mb-1.5 block">Phone number</Label>
                 <Input type="tel" placeholder="+234..." {...register("phone")} />
@@ -481,7 +489,7 @@ export function RecipientForm({
       <Button
         type="submit"
         disabled={isSubmitting || !countryCode}
-        className="w-full bg-green-600 hover:bg-green-700 text-white mt-2"
+        className="w-full bg-emerald hover:bg-emerald-deep text-bone border-2 border-ink mt-2"
       >
         {isSubmitting ? (
           <>

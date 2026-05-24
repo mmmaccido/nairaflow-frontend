@@ -23,17 +23,17 @@ function passwordStrength(password: string): { label: string; color: string; sco
   if (/[0-9]/.test(password)) score++
   if (/[^a-zA-Z0-9]/.test(password)) score++
 
-  if (score <= 1) return { label: "Weak", color: "bg-red-500", score }
-  if (score <= 2) return { label: "Fair", color: "bg-amber-500", score }
-  return { label: "Strong", color: "bg-green-500", score }
+  if (score <= 1) return { label: "Weak", color: "bg-clay", score }
+  if (score <= 2) return { label: "Fair", color: "bg-amber", score }
+  return { label: "Strong", color: "bg-emerald", score }
 }
 
 function FieldStatus({ isDirty, isValid }: { isDirty: boolean; isValid: boolean }) {
   if (!isDirty) return null
   return isValid ? (
-    <CheckCircle2 className="size-4 text-green-600 absolute right-3 top-1/2 -translate-y-1/2" />
+    <CheckCircle2 className="size-4 text-emerald absolute right-3 top-1/2 -translate-y-1/2" />
   ) : (
-    <XCircle className="size-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />
+    <XCircle className="size-4 text-clay absolute right-3 top-1/2 -translate-y-1/2" />
   )
 }
 
@@ -101,19 +101,19 @@ export default function RegisterPage() {
     const dirty = !!dirtyFields[name]
     const error = !!errors[name]
     if (!dirty) return ""
-    return error ? "border-red-400 focus-visible:ring-red-300 pr-9" : "border-green-500 focus-visible:ring-green-300 pr-9"
+    return error ? "border-clay/60 pr-9" : "border-emerald pr-9"
   }
 
   return (
-    <Card className="w-full max-w-md shadow-sm">
+    <Card className="w-full max-w-md border-2 border-ink shadow-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-xl font-sora">Create your account</CardTitle>
+        <CardTitle className="text-xl font-display">Create your account</CardTitle>
         <CardDescription>Start sending money in minutes</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {serverError && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-sm text-clay bg-clay/10 border border-clay/30 rounded-lg px-3 py-2">
               {serverError}
             </p>
           )}
@@ -131,7 +131,7 @@ export default function RegisterPage() {
                 />
                 <FieldStatus isDirty={!!dirtyFields.firstName} isValid={!errors.firstName} />
               </div>
-              {errors.firstName && <p className="text-xs text-red-600">{errors.firstName.message}</p>}
+              {errors.firstName && <p className="text-xs text-clay">{errors.firstName.message}</p>}
             </div>
 
             {/* Last name */}
@@ -146,7 +146,7 @@ export default function RegisterPage() {
                 />
                 <FieldStatus isDirty={!!dirtyFields.lastName} isValid={!errors.lastName} />
               </div>
-              {errors.lastName && <p className="text-xs text-red-600">{errors.lastName.message}</p>}
+              {errors.lastName && <p className="text-xs text-clay">{errors.lastName.message}</p>}
             </div>
           </div>
 
@@ -164,14 +164,14 @@ export default function RegisterPage() {
               />
               <FieldStatus isDirty={!!dirtyFields.email} isValid={!errors.email} />
             </div>
-            {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
+            {errors.email && <p className="text-xs text-clay">{errors.email.message}</p>}
           </div>
 
           {/* Phone */}
           <div className="space-y-1.5">
             <Label htmlFor="phoneSuffix">Phone number</Label>
             <div className="flex gap-2">
-              <span className="flex items-center px-3 bg-slate-100 border border-slate-200 rounded-md text-sm text-slate-600 font-medium">
+              <span className="flex items-center px-3 bg-bone-deep border border-bone-deep rounded-md text-sm text-ink-soft font-medium">
                 +234
               </span>
               <div className="relative flex-1">
@@ -188,7 +188,7 @@ export default function RegisterPage() {
                 <FieldStatus isDirty={!!dirtyFields.phone} isValid={!errors.phone} />
               </div>
             </div>
-            {errors.phone && <p className="text-xs text-red-600">{errors.phone.message}</p>}
+            {errors.phone && <p className="text-xs text-clay">{errors.phone.message}</p>}
           </div>
 
           {/* Password */}
@@ -213,15 +213,15 @@ export default function RegisterPage() {
                       key={i}
                       className={[
                         "h-1 flex-1 rounded-full transition-all",
-                        i <= strength.score ? strength.color : "bg-slate-200",
+                        i <= strength.score ? strength.color : "bg-bone-deep",
                       ].join(" ")}
                     />
                   ))}
                 </div>
-                <p className="text-xs text-slate-500">{strength.label}</p>
+                <p className="text-xs text-muted-text">{strength.label}</p>
               </div>
             )}
-            {errors.password && <p className="text-xs text-red-600">{errors.password.message}</p>}
+            {errors.password && <p className="text-xs text-clay">{errors.password.message}</p>}
           </div>
 
           {/* Confirm password */}
@@ -239,7 +239,7 @@ export default function RegisterPage() {
               <FieldStatus isDirty={!!dirtyFields.confirmPassword} isValid={!errors.confirmPassword} />
             </div>
             {errors.confirmPassword && (
-              <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
+              <p className="text-xs text-clay">{errors.confirmPassword.message}</p>
             )}
           </div>
 
@@ -250,15 +250,15 @@ export default function RegisterPage() {
               type="checkbox"
               checked={terms}
               onChange={(e) => setTerms(e.target.checked)}
-              className="size-4 mt-0.5 rounded border-slate-300 accent-green-600"
+              className="size-4 mt-0.5 rounded border-bone-deep accent-emerald"
             />
             <Label htmlFor="terms" className="text-sm font-normal cursor-pointer leading-snug">
               I agree to the{" "}
-              <Link href="/terms" className="text-green-700 hover:underline">
+              <Link href="/terms" className="text-emerald hover:underline">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="text-green-700 hover:underline">
+              <Link href="/privacy" className="text-emerald hover:underline">
                 Privacy Policy
               </Link>
             </Label>
@@ -267,7 +267,7 @@ export default function RegisterPage() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-ink hover:bg-ink-soft text-bone"
           >
             {isSubmitting ? (
               <>
@@ -280,9 +280,9 @@ export default function RegisterPage() {
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-slate-500">
+        <p className="mt-4 text-center text-sm text-muted-text">
           Already have an account?{" "}
-          <Link href="/login" className="text-green-700 font-medium hover:underline">
+          <Link href="/login" className="text-emerald font-medium hover:underline">
             Sign in
           </Link>
         </p>

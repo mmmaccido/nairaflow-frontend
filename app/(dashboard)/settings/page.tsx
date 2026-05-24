@@ -62,9 +62,9 @@ function passwordStrength(pw: string): { score: number; label: string; color: st
   if (/[A-Z]/.test(pw))        score++
   if (/[0-9]/.test(pw))        score++
   if (/[^a-zA-Z0-9]/.test(pw)) score++
-  if (score <= 1) return { score, label: "Weak",   color: "bg-red-500" }
-  if (score <= 2) return { score, label: "Fair",   color: "bg-amber-500" }
-  return              { score, label: "Strong", color: "bg-green-500" }
+  if (score <= 1) return { score, label: "Weak",   color: "bg-clay" }
+  if (score <= 2) return { score, label: "Fair",   color: "bg-amber" }
+  return              { score, label: "Strong", color: "bg-emerald" }
 }
 
 const NOTIF_KEYS = [
@@ -77,10 +77,10 @@ const NOTIF_KEYS = [
 
 function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-5">
+    <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-6 space-y-5">
       <div>
-        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-        {description && <p className="text-sm text-slate-500 mt-0.5">{description}</p>}
+        <h2 className="text-base font-semibold text-ink">{title}</h2>
+        {description && <p className="text-sm text-muted-text mt-0.5">{description}</p>}
       </div>
       {children}
     </div>
@@ -89,7 +89,7 @@ function Section({ title, description, children }: { title: string; description?
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
-  return <p className="text-xs text-red-600 mt-0.5">{message}</p>
+  return <p className="text-xs text-clay mt-0.5">{message}</p>
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -206,14 +206,14 @@ export default function SettingsPage() {
     })
   }
 
-  const labelCls = "mb-1.5 block text-sm font-medium text-slate-700"
+  const labelCls = "mb-1.5 block text-sm font-medium text-ink-soft"
   const inputCls = "mt-0"
 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold font-sora text-slate-900 mb-0.5">Settings</h1>
-        <p className="text-slate-500 text-sm">Manage your account preferences.</p>
+        <h1 className="text-2xl font-bold font-display text-ink mb-0.5">Settings</h1>
+        <p className="text-muted-text text-sm">Manage your account preferences.</p>
       </div>
 
       {/* ── Profile ─────────────────────────────────────────────────────── */}
@@ -239,7 +239,7 @@ export default function SettingsPage() {
           <div>
             <Label className={labelCls}>Phone</Label>
             <div className="flex items-center">
-              <span className="inline-flex items-center px-3 h-10 rounded-l-md border border-r-0 border-slate-200 bg-slate-50 text-slate-500 text-sm">
+              <span className="inline-flex items-center px-3 h-10 rounded-l-md border border-r-0 border-bone-deep bg-bone text-muted-text text-sm">
                 +234
               </span>
               <Input
@@ -263,7 +263,7 @@ export default function SettingsPage() {
           <Button
             type="submit"
             disabled={profileSaving}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-emerald hover:bg-emerald-deep text-bone"
           >
             {profileSaving && <Loader2 className="size-4 animate-spin mr-2" />}
             Save profile
@@ -276,10 +276,10 @@ export default function SettingsPage() {
         <div className="space-y-6">
           {/* Change password */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Change password</h3>
+            <h3 className="text-sm font-semibold text-ink-soft mb-3">Change password</h3>
             <form onSubmit={handlePw(onPasswordSubmit)} className="space-y-4">
               {passwordError && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                <p className="text-sm text-clay bg-clay/10 border border-clay/30 rounded-lg px-3 py-2">
                   {passwordError}
                 </p>
               )}
@@ -294,7 +294,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCurrent((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-text"
                   >
                     {showCurrent ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -312,7 +312,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowNew((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-text"
                   >
                     {showNew ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -326,12 +326,12 @@ export default function SettingsPage() {
                           key={i}
                           className={cn(
                             "h-1 flex-1 rounded-full transition-colors",
-                            i <= strength.score ? strength.color : "bg-slate-200"
+                            i <= strength.score ? strength.color : "bg-bone-deep"
                           )}
                         />
                       ))}
                     </div>
-                    <p className="text-xs text-slate-500">{strength.label}</p>
+                    <p className="text-xs text-muted-text">{strength.label}</p>
                   </div>
                 )}
                 <FieldError message={pwe.new_password?.message} />
@@ -347,7 +347,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirm((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-text"
                   >
                     {showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -357,7 +357,7 @@ export default function SettingsPage() {
               <Button
                 type="submit"
                 disabled={pwSaving}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-emerald hover:bg-emerald-deep text-bone"
               >
                 {pwSaving && <Loader2 className="size-4 animate-spin mr-2" />}
                 Update password
@@ -366,12 +366,12 @@ export default function SettingsPage() {
           </div>
 
           {/* 2FA */}
-          <div className="border-t border-slate-100 pt-5">
+          <div className="border-t border-bone-deep pt-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-700">Two-factor authentication</p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Status: <span className={user?.two_factor_enabled ? "text-green-600 font-medium" : "text-slate-400"}>
+                <p className="text-sm font-semibold text-ink-soft">Two-factor authentication</p>
+                <p className="text-xs text-muted-text mt-0.5">
+                  Status: <span className={user?.two_factor_enabled ? "text-emerald font-medium" : "text-muted-text"}>
                     {user?.two_factor_enabled ? "Enabled" : "Disabled"}
                   </span>
                 </p>
@@ -389,12 +389,12 @@ export default function SettingsPage() {
         <div className="space-y-4">
           {NOTIF_KEYS.map(({ key, label }) => (
             <div key={key} className="flex items-center justify-between">
-              <span className="text-sm text-slate-700">{label}</span>
+              <span className="text-sm text-ink-soft">{label}</span>
               <button
                 onClick={() => toggleNotif(key)}
                 className={cn(
                   "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
-                  notifs[key] ? "bg-green-600" : "bg-slate-200"
+                  notifs[key] ? "bg-emerald" : "bg-bone-deep"
                 )}
                 role="switch"
                 aria-checked={notifs[key]}
@@ -418,10 +418,10 @@ export default function SettingsPage() {
             <DialogTitle>Two-factor authentication</DialogTitle>
           </DialogHeader>
           <div className="text-center py-6 space-y-3">
-            <div className="size-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto text-2xl">
+            <div className="size-14 rounded-full bg-amber/15 flex items-center justify-center mx-auto text-2xl">
               🔐
             </div>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-ink-soft">
               Two-factor authentication is coming soon. We&apos;ll notify you when it&apos;s available.
             </p>
           </div>

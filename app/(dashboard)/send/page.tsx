@@ -1,14 +1,13 @@
 "use client"
 
-import { useState, useEffect, useCallback, Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Loader2, Clock, Building2, Banknote, Truck, Smartphone, Globe } from "lucide-react"
+import { useState, useEffect, useCallback, useRef, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
+import { Loader2, Clock, Building2, Truck, Smartphone, Globe } from "lucide-react"
 import { useAuthStore } from "@/lib/auth"
 import apiClient from "@/lib/api"
 import { handleApiError } from "@/lib/handleApiError"
 import type { Rate } from "@/types/rate"
 import type { Recipient } from "@/types/recipient"
-import type { Transaction } from "@/types/transaction"
 import { StepIndicator } from "@/components/shared/StepIndicator"
 import { RecipientForm, COUNTRIES, CURRENCY_TO_COUNTRY } from "@/components/forms/RecipientForm"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -98,7 +97,6 @@ function maskRecipient(r: Recipient): string {
 }
 
 function SendFlow() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { isAuthenticated } = useAuthStore()
 
@@ -126,6 +124,7 @@ function SendFlow() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
   const [timeLeft, setTimeLeft] = useState(0)
+  const payingRef = useRef(false)
 
   const amount = parseNGN(ngnInput)
   const fee = amount >= 1000 ? computeFee(amount) : 0
@@ -155,6 +154,7 @@ function SendFlow() {
   // Fetch rate when currency changes
   const fetchRate = useCallback(async (cur: string) => {
     setRateStale(false)
+    setRate(null)
     try {
       const res = await apiClient.get<Rate>(`/rates/${cur}`)
       setRate(res.data)
@@ -180,8 +180,8 @@ function SendFlow() {
     if (step !== 2 || !isAuthenticated) return
     setRecipientsLoading(true)
     apiClient
-      .get<Recipient[]>("/recipients")
-      .then((r) => setSavedRecipients(r.data))
+      .get<{ data: Recipient[] }>("/recipients")
+      .then((r) => setSavedRecipients(r.data.data ?? []))
       .catch(() => {})
       .finally(() => setRecipientsLoading(false))
   }, [step, isAuthenticated])
@@ -200,20 +200,26 @@ function SendFlow() {
   const canContinueStep2 = !!recipient
 
   async function handlePay() {
-    if (!recipient || !termsAccepted) return
+    if (!recipient || !termsAccepted || payingRef.current) return
+    payingRef.current = true
     setSubmitting(true)
     setSubmitError("")
     try {
-      const res = await apiClient.post<{ transaction: Transaction; payment_url: string }>("/transactions", {
+      const res = await apiClient.post<{ transactionId: string; authorizationUrl: string }>("/transactions", {
         ngn_amount: amount,
         target_currency: currency,
         delivery_type: deliveryMethod,
         recipient_id: recipient.id || undefined,
       })
-      window.location.href = res.data.payment_url
+      const redirectUrl = res.data.authorizationUrl
+      if (!redirectUrl || typeof redirectUrl !== "string") {
+        throw new Error("Payment gateway did not return a redirect URL. Please try again.")
+      }
+      window.location.href = redirectUrl
     } catch (err) {
       setSubmitError(handleApiError(err))
     } finally {
+      payingRef.current = false
       setSubmitting(false)
     }
   }
@@ -221,18 +227,18 @@ function SendFlow() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold font-sora text-slate-900 mb-1">Send Money</h1>
-        <p className="text-slate-500 text-sm">Fast, transparent transfers with live rates.</p>
+        <h1 className="text-2xl font-bold font-display text-ink mb-1">Send Money</h1>
+        <p className="text-muted-text text-sm">Fast, transparent transfers with live rates.</p>
       </div>
 
       <StepIndicator steps={STEPS} current={step} />
 
       {/* ── STEP 1 ──────────────────────────────────── */}
       {step === 1 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-5">
+        <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-6 space-y-5">
           {/* Amount input */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            <label className="block text-sm font-medium text-ink-soft mb-1.5">
               You send (NGN ₦)
             </label>
             <input
@@ -241,16 +247,16 @@ function SendFlow() {
               value={ngnInput}
               onChange={(e) => setNgnInput(formatNGN(e.target.value))}
               placeholder="50,000"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-medium outline-none focus:border-green-500 transition-colors"
+              className="w-full rounded-lg border border-bone-deep px-3 py-2.5 text-sm font-medium outline-none focus:border-emerald transition-colors bg-paper text-ink"
             />
             {amount > 0 && amount < 1000 && (
-              <p className="text-xs text-red-500 mt-1">Minimum transfer is ₦1,000</p>
+              <p className="text-xs text-clay mt-1">Minimum transfer is ₦1,000</p>
             )}
           </div>
 
           {/* Currency selector */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            <label className="block text-sm font-medium text-ink-soft mb-1.5">
               Recipient gets
             </label>
             <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
@@ -268,23 +274,23 @@ function SendFlow() {
           </div>
 
           {/* Conversion preview */}
-          <div className="rounded-xl bg-green-50 p-4">
+          <div className="rounded-xl bg-emerald/10 p-4">
             {rateLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-40" />
                 <Skeleton className="h-7 w-32" />
               </div>
             ) : rateStale ? (
-              <p className="text-amber-600 text-sm font-medium">Rate may be outdated — check back shortly.</p>
+              <p className="text-amber text-sm font-medium">Rate may be outdated — check back shortly.</p>
             ) : (
               <>
-                <p className="text-xs text-slate-500 mb-0.5">Recipient gets</p>
-                <p className="text-2xl font-bold font-sora text-slate-900">
+                <p className="text-xs text-muted-text mb-0.5">Recipient gets</p>
+                <p className="text-2xl font-bold font-display text-ink">
                   {rate?.symbol}{converted > 0 ? converted.toFixed(2) : "0.00"}
-                  <span className="text-base font-medium text-slate-500 ml-1">{currency}</span>
+                  <span className="text-base font-medium text-ink-soft ml-1">{currency}</span>
                 </p>
                 {rate && (
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-muted-text mt-1">
                     Rate: ₦{rate.our_rate.toLocaleString("en-NG")} / {currency}
                   </p>
                 )}
@@ -294,7 +300,7 @@ function SendFlow() {
 
           {/* Delivery method cards */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Delivery method</label>
+            <label className="block text-sm font-medium text-ink-soft mb-2">Delivery method</label>
             <div className="space-y-2">
               {activeDeliveryMethods.map(({ value, icon: Icon, label, desc }) => (
                 <button
@@ -304,19 +310,19 @@ function SendFlow() {
                   className={cn(
                     "w-full flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-colors",
                     deliveryMethod === value
-                      ? "border-green-600 bg-green-50"
-                      : "border-slate-200 hover:border-slate-300"
+                      ? "border-emerald bg-emerald/10"
+                      : "border-bone-deep hover:border-ink"
                   )}
                 >
                   <div className={cn(
                     "size-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5",
-                    deliveryMethod === value ? "bg-green-600" : "bg-slate-100"
+                    deliveryMethod === value ? "bg-emerald" : "bg-bone-deep"
                   )}>
-                    <Icon className={cn("size-4", deliveryMethod === value ? "text-white" : "text-slate-500")} />
+                    <Icon className={cn("size-4", deliveryMethod === value ? "text-bone" : "text-muted-text")} />
                   </div>
                   <div>
-                    <p className="font-medium text-sm text-slate-900">{label}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+                    <p className="font-medium text-sm text-ink">{label}</p>
+                    <p className="text-xs text-muted-text mt-0.5">{desc}</p>
                   </div>
                 </button>
               ))}
@@ -325,7 +331,7 @@ function SendFlow() {
 
           {/* Rate lock warning */}
           {RATE_LOCK_CURRENCIES.includes(currency) && (
-            <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 text-xs text-amber bg-amber/10 border border-amber/30 rounded-lg px-3 py-2">
               <Clock className="size-3.5 flex-shrink-0" />
               Rate locked for 15 minutes after payment
             </div>
@@ -333,16 +339,16 @@ function SendFlow() {
 
           {/* Fee breakdown */}
           {amount >= 1000 && fee > 0 && (
-            <div className="text-xs text-slate-500 bg-slate-50 rounded-lg px-4 py-3 space-y-1">
+            <div className="text-xs text-muted-text bg-bone rounded-lg px-4 py-3 space-y-1">
               <div className="flex justify-between">
                 <span>Transfer</span>
-                <span className="font-medium text-slate-700">₦{amount.toLocaleString("en-NG")}</span>
+                <span className="font-medium text-ink-soft">₦{amount.toLocaleString("en-NG")}</span>
               </div>
               <div className="flex justify-between">
                 <span>Fee</span>
-                <span className="font-medium text-slate-700">₦{fee.toLocaleString("en-NG")}</span>
+                <span className="font-medium text-ink-soft">₦{fee.toLocaleString("en-NG")}</span>
               </div>
-              <div className="flex justify-between font-semibold text-slate-900 pt-1 border-t border-slate-200">
+              <div className="flex justify-between font-semibold text-ink pt-1 border-t border-bone-deep">
                 <span>Total</span>
                 <span>₦{totalNGN.toLocaleString("en-NG")}</span>
               </div>
@@ -352,7 +358,7 @@ function SendFlow() {
           <button
             onClick={() => setStep(2)}
             disabled={!canContinueStep1}
-            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-semibold text-sm py-3 rounded-xl transition-colors"
+            className="w-full bg-emerald hover:bg-emerald-deep disabled:bg-bone-deep disabled:text-muted-text disabled:cursor-not-allowed text-bone font-semibold text-sm py-3 rounded-xl transition-colors border-2 border-ink disabled:border-bone-deep"
           >
             Continue →
           </button>
@@ -361,7 +367,7 @@ function SendFlow() {
 
       {/* ── STEP 2 ──────────────────────────────────── */}
       {step === 2 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-5">
+        <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-6 space-y-5">
           <Tabs
             value={recipientTab}
             onValueChange={(v) => { if (v) { setRecipientTab(v); setSelectedRecipient(null); setNewRecipient(null) } }}
@@ -379,11 +385,11 @@ function SendFlow() {
                   ))}
                 </div>
               ) : savedRecipients.length === 0 ? (
-                <div className="text-center py-8 text-slate-400">
+                <div className="text-center py-8 text-muted-text">
                   <p className="text-sm mb-2">No saved recipients yet.</p>
                   <button
                     onClick={() => setRecipientTab("new")}
-                    className="text-green-700 text-sm font-medium hover:underline"
+                    className="text-emerald text-sm font-medium hover:underline"
                   >
                     Add a new recipient →
                   </button>
@@ -400,18 +406,18 @@ function SendFlow() {
                         className={cn(
                           "w-full flex items-center gap-4 rounded-xl border-2 px-4 py-3 text-left transition-colors",
                           selectedRecipient?.id === r.id
-                            ? "border-green-600 bg-green-50"
-                            : "border-slate-200 hover:border-slate-300"
+                            ? "border-emerald bg-emerald/10"
+                            : "border-bone-deep hover:border-ink"
                         )}
                       >
-                        <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center text-lg flex-shrink-0">
+                        <div className="size-10 rounded-full bg-bone-deep flex items-center justify-center text-lg flex-shrink-0">
                           {country?.flag ?? "🌍"}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium text-sm text-slate-900">
+                          <p className="font-medium text-sm text-ink">
                             {r.first_name} {r.last_name}
                           </p>
-                          <p className="text-xs text-slate-500 truncate">
+                          <p className="text-xs text-muted-text truncate">
                             {country?.name} · {r.currency} · {maskRecipient(r)}
                           </p>
                         </div>
@@ -424,16 +430,16 @@ function SendFlow() {
 
             <TabsContent value="new">
               {newRecipient ? (
-                <div className="rounded-xl border-2 border-green-600 bg-green-50 px-4 py-3 flex items-center justify-between">
+                <div className="rounded-xl border-2 border-emerald bg-emerald/10 px-4 py-3 flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-sm text-slate-900">
+                    <p className="font-medium text-sm text-ink">
                       {newRecipient.first_name} {newRecipient.last_name}
                     </p>
-                    <p className="text-xs text-slate-500">{maskRecipient(newRecipient)}</p>
+                    <p className="text-xs text-muted-text">{maskRecipient(newRecipient)}</p>
                   </div>
                   <button
                     onClick={() => setNewRecipient(null)}
-                    className="text-xs text-slate-500 hover:text-slate-700 underline"
+                    className="text-xs text-muted-text hover:text-ink underline"
                   >
                     Change
                   </button>
@@ -451,14 +457,14 @@ function SendFlow() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setStep(1)}
-              className="flex-1 border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm py-3 rounded-xl transition-colors"
+              className="flex-1 border border-bone-deep text-ink-soft hover:bg-bone font-semibold text-sm py-3 rounded-xl transition-colors"
             >
               ← Back
             </button>
             <button
               onClick={() => setStep(3)}
               disabled={!canContinueStep2}
-              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-semibold text-sm py-3 rounded-xl transition-colors"
+              className="flex-1 bg-emerald hover:bg-emerald-deep disabled:bg-bone-deep disabled:text-muted-text disabled:cursor-not-allowed text-bone font-semibold text-sm py-3 rounded-xl transition-colors border-2 border-ink disabled:border-bone-deep"
             >
               Continue →
             </button>
@@ -468,54 +474,54 @@ function SendFlow() {
 
       {/* ── STEP 3 ──────────────────────────────────── */}
       {step === 3 && recipient && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-5">
+        <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-6 space-y-5">
           {/* Summary */}
-          <div className="rounded-xl bg-slate-50 p-5 space-y-3">
+          <div className="rounded-xl bg-bone p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500">You send</span>
-              <span className="font-semibold text-slate-900">₦{amount.toLocaleString("en-NG")}</span>
+              <span className="text-sm text-muted-text">You send</span>
+              <span className="font-semibold text-ink">₦{amount.toLocaleString("en-NG")}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500">Recipient gets</span>
-              <span className="font-semibold text-green-700 text-lg">
+              <span className="text-sm text-muted-text">Recipient gets</span>
+              <span className="font-semibold text-emerald text-lg">
                 {rate?.symbol}{converted.toFixed(2)} {currency}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500">Fee</span>
-              <span className="font-medium text-slate-700">₦{fee.toLocaleString("en-NG")}</span>
+              <span className="text-sm text-muted-text">Fee</span>
+              <span className="font-medium text-ink-soft">₦{fee.toLocaleString("en-NG")}</span>
             </div>
-            <div className="flex items-center justify-between border-t border-slate-200 pt-3">
-              <span className="text-sm font-semibold text-slate-900">Total deducted</span>
-              <span className="font-bold text-slate-900">₦{totalNGN.toLocaleString("en-NG")}</span>
+            <div className="flex items-center justify-between border-t border-bone-deep pt-3">
+              <span className="text-sm font-semibold text-ink">Total deducted</span>
+              <span className="font-bold text-ink">₦{totalNGN.toLocaleString("en-NG")}</span>
             </div>
           </div>
 
           {/* Recipient details */}
-          <div className="rounded-xl border border-slate-200 p-4 space-y-2">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Recipient</p>
-            <p className="font-semibold text-slate-900">
+          <div className="rounded-xl border border-bone-deep p-4 space-y-2">
+            <p className="text-xs font-medium text-muted-text uppercase tracking-wide">Recipient</p>
+            <p className="font-semibold text-ink">
               {recipient.first_name} {recipient.last_name}
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-text">
               {COUNTRIES.find((c) => c.code === recipient.country_code)?.flag}{" "}
               {COUNTRIES.find((c) => c.code === recipient.country_code)?.name} ·{" "}
               {DELIVERY_METHODS.find((m) => m.value === deliveryMethod)?.label}
             </p>
-            <p className="text-sm text-slate-500">{maskRecipient(recipient)}</p>
+            <p className="text-sm text-muted-text">{maskRecipient(recipient)}</p>
           </div>
 
           {/* Rate + countdown */}
           <div className="flex items-center justify-between text-sm">
             <div>
-              <span className="text-slate-500">Rate used: </span>
-              <span className="font-medium text-slate-900">
-                ₦{rate?.our_rate.toLocaleString("en-NG")} / {currency}
+              <span className="text-muted-text">Rate used: </span>
+              <span className="font-medium text-ink">
+                ₦{rate?.our_rate?.toLocaleString("en-NG")} / {currency}
               </span>
             </div>
             <div className={cn(
               "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full",
-              timeLeft > 120 ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+              timeLeft > 120 ? "bg-emerald/10 text-emerald" : "bg-amber/10 text-amber"
             )}>
               <Clock className="size-3.5" />
               Rate locked · {formatTime(timeLeft)}
@@ -529,16 +535,16 @@ function SendFlow() {
               type="checkbox"
               checked={termsAccepted}
               onChange={(e) => setTermsAccepted(e.target.checked)}
-              className="size-4 mt-0.5 rounded border-slate-300 accent-green-600"
+              className="size-4 mt-0.5 rounded border-bone-deep accent-emerald"
             />
-            <label htmlFor="terms_pay" className="text-sm text-slate-600 cursor-pointer">
+            <label htmlFor="terms_pay" className="text-sm text-ink-soft cursor-pointer">
               I confirm the recipient details are correct and agree to the{" "}
-              <a href="/terms" className="text-green-700 hover:underline">Terms of Service</a>
+              <a href="/terms" className="text-emerald hover:underline">Terms of Service</a>
             </label>
           </div>
 
           {submitError && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-sm text-clay bg-clay/10 border border-clay/30 rounded-lg px-3 py-2">
               {submitError}
             </p>
           )}
@@ -546,14 +552,14 @@ function SendFlow() {
           <div className="flex gap-3">
             <button
               onClick={() => setStep(2)}
-              className="flex-1 border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm py-3 rounded-xl transition-colors"
+              className="flex-1 border border-bone-deep text-ink-soft hover:bg-bone font-semibold text-sm py-3 rounded-xl transition-colors"
             >
               ← Back
             </button>
             <button
               onClick={handlePay}
               disabled={!termsAccepted || submitting || timeLeft === 0}
-              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-semibold text-sm py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="flex-1 bg-emerald hover:bg-emerald-deep disabled:bg-bone-deep disabled:text-muted-text disabled:cursor-not-allowed text-bone font-semibold text-sm py-3 rounded-xl transition-colors border-2 border-ink disabled:border-bone-deep flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>

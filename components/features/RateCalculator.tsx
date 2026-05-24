@@ -80,16 +80,16 @@ export function RateCalculator({ dark = false }: { dark?: boolean }) {
     }
   }
 
-  const labelCls = cn("text-xs font-medium mb-1", dark ? "text-slate-400" : "text-slate-500")
+  const labelCls = cn("text-xs font-medium mb-1", dark ? "text-muted-dark" : "text-muted-text")
   const inputCls = cn(
     "w-full rounded-lg border px-3 py-2.5 text-sm font-medium outline-none transition-colors",
     dark
-      ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-green-500"
-      : "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-green-500"
+      ? "bg-ink border-ink-line text-bone placeholder:text-muted-dark focus:border-emerald"
+      : "bg-bone border-bone-deep text-ink placeholder:text-muted-text focus:border-emerald"
   )
   const cardCls = cn(
-    "rounded-2xl p-5 shadow-lg",
-    dark ? "bg-slate-800/80 border border-slate-700" : "bg-white border border-slate-100"
+    "rounded-xl p-5",
+    dark ? "bg-ink-soft border border-ink-line shadow-md" : "bg-paper border-2 border-ink shadow-sm"
   )
 
   return (
@@ -116,8 +116,8 @@ export function RateCalculator({ dark = false }: { dark?: boolean }) {
               className={cn(
                 "w-full rounded-lg border px-3 py-2.5 text-sm font-medium h-auto",
                 dark
-                  ? "bg-slate-800 border-slate-700 text-white hover:bg-slate-700"
-                  : "bg-white border-slate-200 text-slate-900"
+                  ? "bg-ink border-ink-line text-bone hover:bg-ink-soft"
+                  : "bg-bone border-bone-deep text-ink"
               )}
             >
               <SelectValue>{currencyMeta?.label}</SelectValue>
@@ -134,27 +134,27 @@ export function RateCalculator({ dark = false }: { dark?: boolean }) {
       </div>
 
       {/* Result */}
-      <div className={cn("rounded-xl p-4 mb-4", dark ? "bg-slate-900" : "bg-green-50")}>
+      <div className={cn("rounded-xl p-4 mb-4", dark ? "bg-ink" : "bg-emerald/10")}>
         {loading ? (
           <div className="space-y-2">
             <Skeleton className="h-4 w-40" />
             <Skeleton className="h-7 w-32" />
           </div>
         ) : stale ? (
-          <p className="text-amber-500 text-sm font-medium">Rate may be outdated. Check back shortly.</p>
+          <p className="text-amber text-sm font-medium">Rate may be outdated. Check back shortly.</p>
         ) : (
           <>
-            <p className={cn("text-xs mb-0.5", dark ? "text-slate-400" : "text-slate-500")}>
+            <p className={cn("text-xs mb-0.5", dark ? "text-muted-dark" : "text-muted-text")}>
               Recipient gets
             </p>
-            <p className={cn("text-2xl font-bold font-sora", dark ? "text-white" : "text-slate-900")}>
+            <p className={cn("text-2xl font-bold font-display", dark ? "text-bone" : "text-ink")}>
               {converted ? `${rate?.symbol}${converted}` : `${rate?.symbol ?? ""}0.00`}{" "}
-              <span className={cn("text-base font-medium", dark ? "text-slate-400" : "text-slate-500")}>
+              <span className={cn("text-base font-medium", dark ? "text-muted-dark" : "text-muted-text")}>
                 {currency}
               </span>
             </p>
             {rate && (
-              <p className={cn("text-xs mt-1", dark ? "text-slate-500" : "text-slate-400")}>
+              <p className={cn("text-xs mt-1", dark ? "text-muted-dark" : "text-muted-text")}>
                 Rate: ₦{rate.our_rate.toLocaleString("en-NG")} / {currency}
               </p>
             )}
@@ -164,14 +164,14 @@ export function RateCalculator({ dark = false }: { dark?: boolean }) {
 
       {/* Fee */}
       {fee && !loading && !stale && (
-        <p className={cn("text-xs mb-4", dark ? "text-slate-400" : "text-slate-500")}>
+        <p className={cn("text-xs mb-4", dark ? "text-muted-dark" : "text-muted-text")}>
           Transfer fee: <span className="font-medium">₦{fee}</span> · Includes all charges
         </p>
       )}
 
       <button
         onClick={handleSend}
-        className="w-full bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold text-sm py-3 rounded-xl transition-colors"
+        className="w-full bg-emerald hover:bg-emerald-deep text-bone font-semibold text-sm py-3 rounded-xl transition-colors border-2 border-ink"
       >
         Send money →
       </button>

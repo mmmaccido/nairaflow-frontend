@@ -56,15 +56,15 @@ function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm shadow-sm">
+    <Card className="w-full max-w-sm border-2 border-ink shadow-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-xl font-sora">Welcome back</CardTitle>
+        <CardTitle className="text-xl font-display">Welcome back</CardTitle>
         <CardDescription>Sign in to your NairaFlow account</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {serverError && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-sm text-clay bg-clay/10 border border-clay/30 rounded-lg px-3 py-2">
               {serverError}
             </p>
           )}
@@ -77,17 +77,17 @@ function LoginForm() {
               autoComplete="email"
               placeholder="you@example.com"
               {...register("email")}
-              className={errors.email ? "border-red-400 focus-visible:ring-red-300" : ""}
+              className={errors.email ? "border-clay/60" : ""}
             />
             {errors.email && (
-              <p className="text-xs text-red-600">{errors.email.message}</p>
+              <p className="text-xs text-clay">{errors.email.message}</p>
             )}
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              <Link href="/forgot-password" className="text-xs text-green-700 hover:underline">
+              <Link href="/forgot-password" className="text-xs text-emerald hover:underline">
                 Forgot password?
               </Link>
             </div>
@@ -97,10 +97,10 @@ function LoginForm() {
               autoComplete="current-password"
               placeholder="••••••••"
               {...register("password")}
-              className={errors.password ? "border-red-400 focus-visible:ring-red-300" : ""}
+              className={errors.password ? "border-clay/60" : ""}
             />
             {errors.password && (
-              <p className="text-xs text-red-600">{errors.password.message}</p>
+              <p className="text-xs text-clay">{errors.password.message}</p>
             )}
           </div>
 
@@ -110,7 +110,7 @@ function LoginForm() {
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="size-4 rounded border-slate-300 accent-green-600"
+              className="size-4 rounded border-bone-deep accent-emerald"
             />
             <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
               Remember me
@@ -120,7 +120,7 @@ function LoginForm() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-ink hover:bg-ink-soft text-bone"
           >
             {isSubmitting ? (
               <>
@@ -133,9 +133,9 @@ function LoginForm() {
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-slate-500">
+        <p className="mt-4 text-center text-sm text-muted-text">
           No account?{" "}
-          <Link href="/register" className="text-green-700 font-medium hover:underline">
+          <Link href="/register" className="text-emerald font-medium hover:underline">
             Create one
           </Link>
         </p>
@@ -146,7 +146,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="w-full max-w-sm h-96 animate-pulse rounded-lg bg-white shadow-sm" />}>
+    <Suspense fallback={<div className="w-full max-w-sm h-96 animate-pulse rounded-xl bg-paper border-2 border-ink shadow-md" />}>
       <LoginForm />
     </Suspense>
   )

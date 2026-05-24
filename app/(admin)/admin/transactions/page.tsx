@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, RefreshCw, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/lib/api"
 import { handleApiError } from "@/lib/handleApiError"
+import { ErrorAlert } from "@/components/shared/ErrorAlert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,12 +48,12 @@ interface Paginated<T> {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-  COMPLETED:  { color: "bg-green-100 text-green-700",   label: "Completed"  },
-  PROCESSING: { color: "bg-yellow-100 text-yellow-700", label: "Processing" },
-  PAID:       { color: "bg-blue-100 text-blue-600",     label: "Paid"       },
-  PENDING:    { color: "bg-slate-100 text-slate-600",   label: "Pending"    },
-  FAILED:     { color: "bg-red-100 text-red-700",       label: "Failed"     },
-  REFUNDED:   { color: "bg-purple-100 text-purple-700", label: "Refunded"   },
+  COMPLETED:  { color: "bg-emerald/10 text-emerald",     label: "Completed"  },
+  PROCESSING: { color: "bg-amber/15 text-amber",         label: "Processing" },
+  PAID:       { color: "bg-emerald/10 text-emerald",     label: "Paid"       },
+  PENDING:    { color: "bg-bone-deep text-muted-text",   label: "Pending"    },
+  FAILED:     { color: "bg-clay/10 text-clay",           label: "Failed"     },
+  REFUNDED:   { color: "bg-sage/20 text-emerald-light",  label: "Refunded"   },
 }
 
 const DELIVERY_TYPES = ["BANK_WIRE", "BANK_TRANSFER_NGN", "CASH_PICKUP", "MOBILE_MONEY"]
@@ -62,7 +63,7 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })
 }
 
-const selectCls = "rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white text-slate-700 outline-none focus:border-green-500 transition-colors"
+const selectCls = "rounded-lg border border-bone-deep px-3 py-2 text-sm bg-paper text-ink-soft outline-none focus:border-emerald transition-colors"
 
 // ─── Override dialog ──────────────────────────────────────────────────────────
 
@@ -105,10 +106,10 @@ function OverrideDialog({
         <DialogHeader>
           <DialogTitle>Override transaction status</DialogTitle>
         </DialogHeader>
-        <p className="text-xs text-slate-500 font-mono mt-1">{tx.paystack_reference}</p>
+        <p className="text-xs text-muted-text font-mono mt-1">{tx.paystack_reference}</p>
         <form onSubmit={submit} className="space-y-4 mt-2">
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+            <p className="text-sm text-clay bg-clay/10 border border-clay/30 rounded-lg px-3 py-2">{error}</p>
           )}
           <div>
             <Label className="mb-1.5 block text-sm font-medium">New status</Label>
@@ -135,7 +136,7 @@ function OverrideDialog({
             <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={saving}>
               Cancel
             </Button>
-            <Button type="submit" className="flex-1 bg-slate-800 hover:bg-slate-900 text-white" disabled={saving || !newStatus || !reason.trim()}>
+            <Button type="submit" className="flex-1 bg-ink hover:bg-ink-soft text-bone" disabled={saving || !newStatus || !reason.trim()}>
               {saving && <Loader2 className="size-4 animate-spin mr-2" />}
               Override
             </Button>
@@ -154,6 +155,7 @@ function AdminTransactionsInner() {
   const [txs, setTxs]                 = useState<AdminTx[]>([])
   const [meta, setMeta]               = useState<{ current_page: number; last_page: number; total: number } | null>(null)
   const [loading, setLoading]         = useState(true)
+  const [error, setError]             = useState<string | null>(null)
   const [page, setPage]               = useState(1)
 
   // filters
@@ -172,6 +174,7 @@ function AdminTransactionsInner() {
 
   const fetchTxs = useCallback(async (p: number) => {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams({ per_page: "25", page: String(p) })
       if (search)       params.set("search", search)
@@ -185,8 +188,8 @@ function AdminTransactionsInner() {
       const res = await apiClient.get<Paginated<AdminTx>>(`/admin/transactions?${params}`)
       setTxs(res.data.data)
       setMeta({ current_page: res.data.current_page, last_page: res.data.last_page, total: res.data.total })
-    } catch {
-      setTxs([])
+    } catch (err) {
+      setError(handleApiError(err))
     } finally {
       setLoading(false)
     }
@@ -212,12 +215,14 @@ function AdminTransactionsInner() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold font-sora text-slate-900 mb-0.5">Transactions</h1>
-        <p className="text-slate-500 text-sm">{meta ? `${meta.total} total` : "Loading…"}</p>
+        <h1 className="text-2xl font-bold font-display text-ink mb-0.5">Transactions</h1>
+        <p className="text-muted-text text-sm">{meta ? `${meta.total} total` : "Loading…"}</p>
       </div>
 
+      {error && !loading && <ErrorAlert message={error} onRetry={() => fetchTxs(page)} />}
+
       {/* Filter bar */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
+      <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <input
             type="text"
@@ -257,23 +262,23 @@ function AdminTransactionsInner() {
             className={selectCls}
           />
         </div>
-        <Button onClick={applyFilters} className="bg-slate-800 hover:bg-slate-900 text-white text-sm">
+        <Button onClick={applyFilters} className="bg-ink hover:bg-ink-soft text-bone text-sm">
           Apply filters
         </Button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+      <div className="bg-paper rounded-xl border-2 border-ink shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
+              <tr className="bg-bone border-b border-bone-deep">
                 {["User", "Recipient", "Sent", "Received", "Status", "Ref", "Date", "Actions"].map((h) => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-medium text-slate-500 whitespace-nowrap">{h}</th>
+                  <th key={h} className="text-left px-4 py-3 text-xs font-medium text-muted-text whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-bone">
               {loading ? (
                 [1, 2, 3, 4, 5].map((i) => (
                   <tr key={i}>
@@ -286,7 +291,7 @@ function AdminTransactionsInner() {
                 ))
               ) : txs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-slate-400 text-sm">
+                  <td colSpan={8} className="text-center py-12 text-muted-text text-sm">
                     No transactions match your filters.
                   </td>
                 </tr>
@@ -294,13 +299,13 @@ function AdminTransactionsInner() {
                 txs.map((tx) => {
                   const statusCfg = STATUS_CONFIG[tx.status] ?? STATUS_CONFIG.PENDING
                   return (
-                    <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 text-xs text-slate-500 max-w-[140px] truncate">{tx.user_email}</td>
-                      <td className="px-4 py-3 text-sm text-slate-800">{tx.recipient_name ?? "—"}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
+                    <tr key={tx.id} className="hover:bg-bone transition-colors">
+                      <td className="px-4 py-3 text-xs text-muted-text max-w-[140px] truncate">{tx.user_email}</td>
+                      <td className="px-4 py-3 text-sm text-ink">{tx.recipient_name ?? "—"}</td>
+                      <td className="px-4 py-3 font-medium text-ink whitespace-nowrap">
                         ₦{tx.ngn_amount.toLocaleString("en-NG")}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      <td className="px-4 py-3 text-ink-soft whitespace-nowrap">
                         {tx.target_amount.toFixed(2)} {tx.target_currency}
                       </td>
                       <td className="px-4 py-3">
@@ -308,13 +313,13 @@ function AdminTransactionsInner() {
                           {statusCfg.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-400">{tx.paystack_reference.slice(0, 12)}…</td>
-                      <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">{formatDate(tx.created_at)}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-text">{tx.paystack_reference.slice(0, 12)}…</td>
+                      <td className="px-4 py-3 text-xs text-muted-text whitespace-nowrap">{formatDate(tx.created_at)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setOverrideTarget(tx)}
-                            className="text-xs font-medium text-slate-600 hover:text-slate-900 underline underline-offset-2"
+                            className="text-xs font-medium text-ink-soft hover:text-ink underline underline-offset-2"
                           >
                             Override
                           </button>
@@ -322,7 +327,7 @@ function AdminTransactionsInner() {
                             <button
                               onClick={() => retryPayout(tx)}
                               disabled={retrying === tx.id}
-                              className="flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800"
+                              className="flex items-center gap-1 text-xs font-medium text-emerald hover:text-emerald-deep"
                             >
                               {retrying === tx.id
                                 ? <Loader2 className="size-3 animate-spin" />
@@ -344,19 +349,19 @@ function AdminTransactionsInner() {
       {/* Pagination */}
       {meta && meta.last_page > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-slate-500">Page {meta.current_page} of {meta.last_page} · {meta.total} total</p>
+          <p className="text-xs text-muted-text">Page {meta.current_page} of {meta.last_page} · {meta.total} total</p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 text-sm border border-bone-deep rounded-lg hover:bg-bone disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="size-3.5" /> Previous
             </button>
             <button
               onClick={() => setPage((p) => Math.min(meta.last_page, p + 1))}
               disabled={page === meta.last_page}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 text-sm border border-bone-deep rounded-lg hover:bg-bone disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Next <ChevronRight className="size-3.5" />
             </button>

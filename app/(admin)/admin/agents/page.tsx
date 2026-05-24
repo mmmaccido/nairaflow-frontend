@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Plus, Pencil, Wallet, Trash2, UserCheck, UserX, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/lib/api"
 import { handleApiError } from "@/lib/handleApiError"
+import { ErrorAlert } from "@/components/shared/ErrorAlert"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
@@ -20,7 +21,6 @@ import { Label } from "@/components/ui/label"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-// Shape returned by GET /api/admin/agents (index)
 interface Agent {
   id: string
   name: string
@@ -33,7 +33,6 @@ interface Agent {
   balance_percentage: number
 }
 
-// Raw shape returned by POST /api/admin/agents (create)
 interface AgentCreateResponse {
   id: string
   user_id: string
@@ -67,15 +66,15 @@ function normalizeCreated(raw: AgentCreateResponse): Agent {
 }
 
 function balanceColor(pct: number) {
-  if (pct < 20) return "bg-red-500"
-  if (pct < 50) return "bg-amber-500"
-  return "bg-green-500"
+  if (pct < 20) return "bg-clay"
+  if (pct < 50) return "bg-amber"
+  return "bg-emerald"
 }
 
 function balanceTrack(pct: number) {
-  if (pct < 20) return "bg-red-100"
-  if (pct < 50) return "bg-amber-100"
-  return "bg-green-100"
+  if (pct < 20) return "bg-clay/10"
+  if (pct < 50) return "bg-amber/15"
+  return "bg-emerald/10"
 }
 
 function fmt(n: number) {
@@ -98,12 +97,12 @@ function AgentCard({
   const pct = Math.min(100, agent.balance_percentage)
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-5 flex flex-col gap-4">
+    <div className="bg-paper rounded-xl border-2 border-ink shadow-sm p-5 flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-semibold text-slate-900 text-sm">{agent.name}</p>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="font-semibold text-ink text-sm">{agent.name}</p>
+          <p className="text-xs text-muted-text mt-0.5">
             {agent.city}, {agent.state}
           </p>
         </div>
@@ -111,8 +110,8 @@ function AgentCard({
           className={cn(
             "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0",
             agent.is_available
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-600"
+              ? "bg-emerald/10 text-emerald"
+              : "bg-clay/10 text-clay"
           )}
         >
           {agent.is_available ? (
@@ -127,10 +126,10 @@ function AgentCard({
       {/* Balance progress */}
       <div>
         <div className="flex justify-between text-xs mb-1.5">
-          <span className="text-slate-500">Cash float</span>
-          <span className="font-medium text-slate-700">
+          <span className="text-muted-text">Cash float</span>
+          <span className="font-medium text-ink-soft">
             {fmt(agent.cash_balance)}{" "}
-            <span className="text-slate-400">/ {fmt(agent.max_balance)}</span>
+            <span className="text-muted-text">/ {fmt(agent.max_balance)}</span>
           </span>
         </div>
         <div className={cn("w-full h-2 rounded-full", balanceTrack(pct))}>
@@ -139,32 +138,32 @@ function AgentCard({
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="text-xs text-slate-400 mt-1">{pct.toFixed(1)}% capacity</p>
+        <p className="text-xs text-muted-text mt-1">{pct.toFixed(1)}% capacity</p>
       </div>
 
       {/* Stats */}
-      <div className="text-xs text-slate-500">
-        <span className="font-medium text-slate-700">{agent.total_deliveries}</span>{" "}
+      <div className="text-xs text-muted-text">
+        <span className="font-medium text-ink">{agent.total_deliveries}</span>{" "}
         deliveries completed
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 pt-1 border-t border-slate-100">
+      <div className="flex gap-2 pt-1 border-t border-bone-deep">
         <button
           onClick={() => onEdit(agent)}
-          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 py-1.5 rounded-lg transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-ink-soft hover:text-ink hover:bg-bone py-1.5 rounded-lg transition-colors"
         >
           <Pencil className="size-3.5" /> Edit
         </button>
         <button
           onClick={() => onTopup(agent)}
-          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-slate-600 hover:text-green-700 hover:bg-green-50 py-1.5 rounded-lg transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-ink-soft hover:text-emerald hover:bg-emerald/10 py-1.5 rounded-lg transition-colors"
         >
           <Wallet className="size-3.5" /> Top up
         </button>
         <button
           onClick={() => onRemove(agent)}
-          className="flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+          className="flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium text-ink-soft hover:text-clay hover:bg-clay/10 transition-colors"
         >
           <Trash2 className="size-3.5" />
         </button>
@@ -266,7 +265,7 @@ function AddAgentDialog({
               required
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-clay">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => { reset(); onClose() }}>
               Cancel
@@ -388,7 +387,7 @@ function EditAgentDialog({
               onClick={() => setForm((f) => ({ ...f, is_available: !f.is_available }))}
               className={cn(
                 "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                form.is_available ? "bg-green-600" : "bg-slate-300"
+                form.is_available ? "bg-emerald" : "bg-bone-deep"
               )}
             >
               <span
@@ -399,7 +398,7 @@ function EditAgentDialog({
               />
             </button>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-clay">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={loading}>
@@ -461,18 +460,18 @@ function TopupDialog({
           <DialogTitle>Top up float</DialogTitle>
         </DialogHeader>
         {agent && (
-          <div className="bg-slate-50 rounded-lg px-4 py-3 text-sm space-y-1">
+          <div className="bg-bone rounded-lg px-4 py-3 text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-slate-500">Current balance</span>
-              <span className="font-medium">{fmt(agent.cash_balance)}</span>
+              <span className="text-muted-text">Current balance</span>
+              <span className="font-medium text-ink">{fmt(agent.cash_balance)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Max balance</span>
-              <span className="font-medium">{fmt(agent.max_balance)}</span>
+              <span className="text-muted-text">Max balance</span>
+              <span className="font-medium text-ink">{fmt(agent.max_balance)}</span>
             </div>
-            <div className="flex justify-between border-t border-slate-200 pt-1">
-              <span className="text-slate-500">Remaining capacity</span>
-              <span className="font-semibold text-green-700">{fmt(remaining)}</span>
+            <div className="flex justify-between border-t border-bone-deep pt-1">
+              <span className="text-muted-text">Remaining capacity</span>
+              <span className="font-semibold text-emerald">{fmt(remaining)}</span>
             </div>
           </div>
         )}
@@ -490,7 +489,7 @@ function TopupDialog({
               required
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-clay">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={loading || !amount}>
@@ -525,8 +524,8 @@ function RemoveDialog({
       onRemoved(agent.id)
       toast.success("Agent removed.")
       onClose()
-    } catch {
-      toast.error("Failed to remove agent.")
+    } catch (err) {
+      toast.error(handleApiError(err))
     } finally {
       setLoading(false)
     }
@@ -538,9 +537,9 @@ function RemoveDialog({
         <DialogHeader>
           <DialogTitle>Remove agent</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-ink-soft">
           Are you sure you want to remove{" "}
-          <strong>{agent?.name ?? "this agent"}</strong>? They will be marked
+          <strong className="text-ink">{agent?.name ?? "this agent"}</strong>? They will be marked
           unavailable and soft-deleted.
         </p>
         <DialogFooter>
@@ -560,18 +559,26 @@ function RemoveDialog({
 export default function AdminAgentsPage() {
   const [agents, setAgents]           = useState<Agent[]>([])
   const [loading, setLoading]         = useState(true)
+  const [error, setError]             = useState<string | null>(null)
   const [showAdd, setShowAdd]         = useState(false)
   const [editAgent, setEditAgent]     = useState<Agent | null>(null)
   const [topupAgent, setTopupAgent]   = useState<Agent | null>(null)
   const [removeAgent, setRemoveAgent] = useState<Agent | null>(null)
 
-  useEffect(() => {
-    apiClient
-      .get<Agent[]>("/admin/agents")
-      .then((r) => setAgents(r.data))
-      .catch(() => toast.error("Failed to load agents."))
-      .finally(() => setLoading(false))
+  const loadAgents = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const r = await apiClient.get<Agent[]>("/admin/agents")
+      setAgents(r.data)
+    } catch (err) {
+      setError(handleApiError(err))
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => { loadAgents() }, [loadAgents])
 
   function handleCreated(agent: Agent) {
     setAgents((prev) => [agent, ...prev])
@@ -602,24 +609,26 @@ export default function AdminAgentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold font-sora text-slate-900">Agents</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h1 className="text-2xl font-bold font-display text-ink">Agents</h1>
+          <p className="text-sm text-muted-text mt-0.5">
             {loading
               ? "Loading…"
               : `${agents.length} agent${agents.length !== 1 ? "s" : ""} registered`}
           </p>
         </div>
-        <Button onClick={() => setShowAdd(true)} className="gap-2">
+        <Button onClick={() => setShowAdd(true)} className="gap-2 bg-ink hover:bg-ink-soft text-bone border-2 border-ink shadow-sm">
           <Plus className="size-4" />
           Add agent
         </Button>
       </div>
 
+      {error && !loading && <ErrorAlert message={error} onRetry={loadAgents} />}
+
       {/* Grid */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
+            <div key={i} className="bg-paper rounded-xl border-2 border-ink shadow-sm p-5 space-y-4">
               <div className="flex justify-between">
                 <div className="space-y-1.5">
                   <Skeleton className="h-4 w-32" />
@@ -636,7 +645,7 @@ export default function AdminAgentsPage() {
                 <Skeleton className="h-3 w-20" />
               </div>
               <Skeleton className="h-3 w-28" />
-              <div className="flex gap-2 pt-1 border-t border-slate-100">
+              <div className="flex gap-2 pt-1 border-t border-bone-deep">
                 <Skeleton className="h-8 flex-1 rounded-lg" />
                 <Skeleton className="h-8 flex-1 rounded-lg" />
                 <Skeleton className="h-8 w-10 rounded-lg" />
@@ -646,8 +655,8 @@ export default function AdminAgentsPage() {
         </div>
       ) : agents.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-slate-500 text-sm">No agents registered yet.</p>
-          <Button onClick={() => setShowAdd(true)} className="mt-4 gap-2">
+          <p className="text-muted-text text-sm">No agents registered yet.</p>
+          <Button onClick={() => setShowAdd(true)} className="mt-4 gap-2 bg-ink hover:bg-ink-soft text-bone">
             <Plus className="size-4" /> Add first agent
           </Button>
         </div>
