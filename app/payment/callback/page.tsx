@@ -3,7 +3,6 @@
 import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react"
-import apiClient from "@/lib/api"
 
 type Status = "loading" | "success" | "error"
 
@@ -24,20 +23,21 @@ function CallbackInner() {
     }
 
     if (isMock) {
-      // Simulate webhook so the transaction transitions PENDING → PAID
-      apiClient
-        .post("/webhooks/paystack", {
-          event: "charge.success",
-          data: { reference },
-        })
+      // Simulate the Paystack webhook so the transaction transitions PENDING → PAID.
+      // Use fetch (not apiClient) to call the webhook at the backend root — it lives at
+      // /webhooks/paystack, NOT under /api — and to avoid the 401 interceptor on failure.
+      const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").origin
+      fetch(`${backendOrigin}/webhooks/paystack`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: "charge.success", data: { reference } }),
+      })
         .catch(() => {})
-        .finally(() => {
-          setStatus("success")
-        })
+        .finally(() => setStatus("success"))
       return
     }
 
-    // Real Paystack callback — just show success; the webhook handles status update
+    // Real Paystack callback — the webhook has already been fired by Paystack server-side.
     setStatus("success")
   }, [reference, isMock])
 
