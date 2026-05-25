@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -316,7 +316,7 @@ function KYCHistoryDialog({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function AdminKYCPage() {
+function AdminKYCPageInner() {
   const router       = useRouter()
   const searchParams = useSearchParams()
 
@@ -508,5 +508,13 @@ export default function AdminKYCPage() {
         onOverridden={loadRecords}
       />
     </div>
+  )
+}
+
+export default function AdminKYCPage() {
+  return (
+    <Suspense>
+      <AdminKYCPageInner />
+    </Suspense>
   )
 }
