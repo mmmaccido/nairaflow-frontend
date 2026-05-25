@@ -48,12 +48,14 @@ interface Paginated<T> {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-  COMPLETED:  { color: "bg-emerald/10 text-emerald",     label: "Completed"  },
-  PROCESSING: { color: "bg-amber/15 text-amber",         label: "Processing" },
-  PAID:       { color: "bg-emerald/10 text-emerald",     label: "Paid"       },
-  PENDING:    { color: "bg-bone-deep text-muted-text",   label: "Pending"    },
-  FAILED:     { color: "bg-clay/10 text-clay",           label: "Failed"     },
-  REFUNDED:   { color: "bg-sage/20 text-emerald-light",  label: "Refunded"   },
+  COMPLETED:      { color: "bg-emerald/10 text-emerald",     label: "Completed"      },
+  PROCESSING:     { color: "bg-amber/15 text-amber",         label: "Processing"     },
+  PAID:           { color: "bg-emerald/10 text-emerald",     label: "Paid"           },
+  PENDING:        { color: "bg-bone-deep text-muted-text",   label: "Pending"        },
+  AGENT_ASSIGNED: { color: "bg-amber/15 text-amber",         label: "Agent assigned" },
+  DELIVERED:      { color: "bg-emerald/10 text-emerald",     label: "Delivered"      },
+  FAILED:         { color: "bg-clay/10 text-clay",           label: "Failed"         },
+  REFUNDED:       { color: "bg-sage/20 text-emerald-light",  label: "Refunded"       },
 }
 
 const DELIVERY_TYPES = ["BANK_WIRE", "BANK_TRANSFER_NGN", "CASH_PICKUP", "MOBILE_MONEY"]
@@ -237,6 +239,7 @@ function AdminTransactionsInner() {
               <option key={v} value={v}>{label}</option>
             ))}
           </select>
+
           <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={selectCls}>
             <option value="">All currencies</option>
             {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
