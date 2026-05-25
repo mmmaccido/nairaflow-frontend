@@ -60,6 +60,7 @@ interface KYCHistoryRecord {
 interface KYCUserHistory {
   user_id: string
   user_email: string
+  email_verified: boolean
   kyc_tier: number
   kyc_status: string
   records: KYCHistoryRecord[]
@@ -122,9 +123,10 @@ function KYCHistoryDialog({
   const [error, setError]       = useState("")
   const [overrideTier, setOverrideTier]     = useState("1")
   const [overrideStatus, setOverrideStatus] = useState<"PENDING" | "APPROVED" | "REJECTED">("APPROVED")
-  const [reason, setReason]     = useState("")
-  const [saving, setSaving]     = useState(false)
+  const [reason, setReason]       = useState("")
+  const [saving, setSaving]       = useState(false)
   const [saveError, setSaveError] = useState("")
+  const [verifyingEmail, setVerifyingEmail] = useState(false)
 
   useEffect(() => {
     if (!userId) { setHistory(null); setError(""); return }
@@ -165,6 +167,20 @@ function KYCHistoryDialog({
     }
   }
 
+  async function forceVerifyEmail() {
+    if (!userId) return
+    setVerifyingEmail(true)
+    try {
+      await apiClient.post(`/admin/kyc/${userId}/verify-email`)
+      toast.success("Email marked as verified.")
+      setHistory((h) => h ? { ...h, email_verified: true } : h)
+    } catch (err) {
+      toast.error(handleApiError(err))
+    } finally {
+      setVerifyingEmail(false)
+    }
+  }
+
   return (
     <Dialog open={!!userId} onOpenChange={(v) => { if (!v) { resetOverride(); onClose() } }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -193,6 +209,23 @@ function KYCHistoryDialog({
 
         {history && !loading && (
           <div className="space-y-5">
+            {/* Email verification warning */}
+            {!history.email_verified && (
+              <div className="flex items-center justify-between bg-clay/10 border border-clay/30 rounded-lg px-3 py-2.5">
+                <div className="flex items-center gap-2">
+                  <XCircle className="size-4 text-clay flex-shrink-0" />
+                  <p className="text-sm text-clay font-medium">Email not verified</p>
+                </div>
+                <button
+                  onClick={forceVerifyEmail}
+                  disabled={verifyingEmail}
+                  className="text-xs font-semibold text-clay underline underline-offset-2 hover:text-clay/80 disabled:opacity-50"
+                >
+                  {verifyingEmail ? "Verifying…" : "Force verify"}
+                </button>
+              </div>
+            )}
+
             {/* Current tier summary */}
             <div className="bg-bone rounded-lg px-4 py-3 text-sm flex items-center justify-between">
               <div>
