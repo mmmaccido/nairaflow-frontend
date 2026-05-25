@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
-import { LayoutDashboard, ArrowRightLeft, TrendingUp, Users, Menu, LogOut, ShieldCheck } from "lucide-react"
+import { LayoutDashboard, ArrowRightLeft, TrendingUp, Users, UserCheck, Menu, LogOut, ShieldCheck } from "lucide-react"
 import { useAuthStore } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ const ADMIN_LINKS = [
   { href: "/admin/transactions", label: "Transactions", icon: ArrowRightLeft },
   { href: "/admin/rates",        label: "Rates",        icon: TrendingUp },
   { href: "/admin/agents",       label: "Agents",       icon: Users },
+  { href: "/admin/kyc",          label: "KYC",          icon: UserCheck },
 ]
 
 function AdminNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {

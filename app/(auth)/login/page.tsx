@@ -1,12 +1,12 @@
 "use client"
 
 import { Suspense } from "react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2 } from "lucide-react"
+import { CheckCircle, Info, Loader2, XCircle } from "lucide-react"
 import { useAuthStore } from "@/lib/auth"
 import apiClient from "@/lib/api"
 import { loginSchema, type LoginInput } from "@/lib/validations"
@@ -25,6 +25,15 @@ function LoginForm() {
 
   const [serverError, setServerError] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
+
+  const verifyBanner = useMemo(() => {
+    const v = searchParams.get("verified")
+    const e = searchParams.get("error")
+    if (v === "1")        return { type: "success", message: "Email verified successfully! You can now log in." }
+    if (v === "already")  return { type: "info",    message: "Your email is already verified. Please log in." }
+    if (e === "invalid-link") return { type: "error", message: "This verification link is invalid or has expired. Please request a new one." }
+    return null
+  }, [searchParams])
 
   const {
     register,
@@ -62,6 +71,18 @@ function LoginForm() {
         <CardDescription>Sign in to your NairaFlow account</CardDescription>
       </CardHeader>
       <CardContent>
+        {verifyBanner && (
+          <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm mb-4 ${
+            verifyBanner.type === "success" ? "bg-emerald/10 border-emerald/30 text-emerald-deep" :
+            verifyBanner.type === "info"    ? "bg-sky-50 border-sky-200 text-sky-700" :
+                                              "bg-clay/10 border-clay/30 text-clay"
+          }`}>
+            {verifyBanner.type === "success" && <CheckCircle className="size-4 mt-0.5 shrink-0" />}
+            {verifyBanner.type === "info"    && <Info        className="size-4 mt-0.5 shrink-0" />}
+            {verifyBanner.type === "error"   && <XCircle     className="size-4 mt-0.5 shrink-0" />}
+            {verifyBanner.message}
+          </div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {serverError && (
             <p className="text-sm text-clay bg-clay/10 border border-clay/30 rounded-lg px-3 py-2">
