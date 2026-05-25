@@ -19,7 +19,7 @@ export default function VerifyEmailPage() {
     setError("")
     setLoading(true)
     try {
-      await apiClient.post("/email/verification-notification")
+      await apiClient.post("/user/verify-email/resend")
       setResent(true)
     } catch (err) {
       setError(handleApiError(err))
