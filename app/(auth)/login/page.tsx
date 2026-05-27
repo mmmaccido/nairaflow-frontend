@@ -56,6 +56,8 @@ function LoginForm() {
         const { amount, currency } = JSON.parse(pending) as { amount: number; currency: string }
         sessionStorage.removeItem("nairaflow_pending_transfer")
         router.push(`/send?amount=${amount}&currency=${currency}`)
+      } else if (res.data.user.role === "admin") {
+        router.push(from.startsWith("/admin") ? from : "/admin")
       } else {
         router.push(from)
       }

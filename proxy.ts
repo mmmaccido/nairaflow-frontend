@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-import { COOKIE_NAME } from "@/lib/constants"
+import { COOKIE_NAME, ROLE_COOKIE_NAME } from "@/lib/constants"
 
 const PROTECTED_PREFIXES = ["/dashboard", "/admin"]
 const AUTH_ROUTES = ["/login", "/register"]
@@ -9,6 +9,7 @@ const AUTH_ROUTES = ["/login", "/register"]
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const token = request.cookies.get(COOKIE_NAME)?.value
+  const role  = request.cookies.get(ROLE_COOKIE_NAME)?.value
 
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
   const isAuthRoute = AUTH_ROUTES.some((p) => pathname.startsWith(p))
@@ -22,7 +23,8 @@ export default function proxy(request: NextRequest) {
 
   // Already logged in → redirect away from auth pages
   if (isAuthRoute && token) {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+    const dest = role === "admin" ? "/admin" : "/dashboard"
+    return NextResponse.redirect(new URL(dest, request.url))
   }
 
   return NextResponse.next()

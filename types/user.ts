@@ -4,7 +4,7 @@ export interface User {
   last_name: string
   email: string
   phone: string
-  role: "USER" | "ADMIN" | "AGENT"
+  role: "user" | "admin" | "agent"
   kyc_status: "PENDING" | "APPROVED" | "REJECTED"
   kyc_tier: 0 | 1 | 2
   bvn_verified: boolean
