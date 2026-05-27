@@ -6,7 +6,7 @@ import { COOKIE_NAME, ROLE_COOKIE_NAME } from "@/lib/constants"
 const PROTECTED_PREFIXES = ["/dashboard", "/admin"]
 const AUTH_ROUTES = ["/login", "/register"]
 
-export default function proxy(request: NextRequest) {
+export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const token = request.cookies.get(COOKIE_NAME)?.value
   const role  = request.cookies.get(ROLE_COOKIE_NAME)?.value
