@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight, Loader2, Search } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/lib/api"
 import { handleApiError } from "@/lib/handleApiError"
@@ -10,6 +10,7 @@ import { ErrorAlert } from "@/components/shared/ErrorAlert"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Dialog,
@@ -28,7 +29,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type KYCStatus = "PENDING" | "VERIFIED" | "FAILED"
+type KYCStatus = "PENDING" | "VERIFIED" | "FAILED" | "APPROVED" | "REJECTED"
 type IDType    = "BVN" | "NIN" | "MANUAL_OVERRIDE"
 
 interface KYCRecord {
@@ -66,6 +67,24 @@ interface KYCUserHistory {
   records: KYCHistoryRecord[]
 }
 
+interface AdminUser {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  kyc_tier: number
+  kyc_status: string | null
+  email_verified: boolean
+  created_at: string
+}
+
+interface UserSearchResponse {
+  data: AdminUser[]
+  current_page: number
+  last_page: number
+  total: number
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtDate(iso: string | null) {
@@ -80,19 +99,23 @@ function fmtDate(iso: string | null) {
 }
 
 function StatusBadge({ status }: { status: KYCStatus }) {
-  const styles: Record<KYCStatus, string> = {
+  const styles: Partial<Record<KYCStatus, string>> = {
     VERIFIED: "bg-emerald/10 text-emerald",
+    APPROVED: "bg-emerald/10 text-emerald",
     PENDING:  "bg-amber-100 text-amber-700",
     FAILED:   "bg-clay/10 text-clay",
+    REJECTED: "bg-clay/10 text-clay",
   }
-  const icons: Record<KYCStatus, React.ReactNode> = {
+  const icons: Partial<Record<KYCStatus, React.ReactNode>> = {
     VERIFIED: <CheckCircle className="size-3" />,
+    APPROVED: <CheckCircle className="size-3" />,
     PENDING:  <Clock       className="size-3" />,
     FAILED:   <XCircle     className="size-3" />,
+    REJECTED: <XCircle     className="size-3" />,
   }
   return (
-    <span className={cn("inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full", styles[status])}>
-      {icons[status]}
+    <span className={cn("inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full", styles[status] ?? "bg-bone text-muted-text")}>
+      {icons[status] ?? null}
       {status}
     </span>
   )
@@ -347,12 +370,166 @@ function KYCHistoryDialog({
   )
 }
 
+// ─── Users Tab ────────────────────────────────────────────────────────────────
+
+function UsersTab({ onSelectUser }: { onSelectUser: (id: string) => void }) {
+  const [userQuery, setUserQuery]       = useState("")
+  const [debouncedQuery, setDebouncedQuery] = useState("")
+  const [userPage, setUserPage]         = useState(1)
+  const [users, setUsers]               = useState<AdminUser[]>([])
+  const [userTotal, setUserTotal]       = useState(0)
+  const [userLastPage, setUserLastPage] = useState(1)
+  const [loading, setLoading]           = useState(false)
+  const [error, setError]               = useState<string | null>(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedQuery(userQuery)
+      setUserPage(1)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [userQuery])
+
+  const loadUsers = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      params.set("page", String(userPage))
+      if (debouncedQuery) params.set("email", debouncedQuery)
+      const r = await apiClient.get<UserSearchResponse>(`/admin/users/search?${params}`)
+      setUsers(r.data.data)
+      setUserTotal(r.data.total)
+      setUserLastPage(r.data.last_page)
+    } catch (err) {
+      setError(handleApiError(err))
+    } finally {
+      setLoading(false)
+    }
+  }, [userPage, debouncedQuery])
+
+  useEffect(() => { loadUsers() }, [loadUsers])
+
+  return (
+    <div className="space-y-4">
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-text pointer-events-none" />
+        <Input
+          type="search"
+          placeholder="Search by email…"
+          value={userQuery}
+          onChange={(e) => setUserQuery(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
+      <p className="text-xs text-muted-text">
+        {loading ? "Loading…" : `${userTotal} user${userTotal !== 1 ? "s" : ""}`}
+      </p>
+
+      {error && !loading && <ErrorAlert message={error} onRetry={loadUsers} />}
+
+      <div className="bg-paper rounded-xl border-2 border-ink shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-bone-deep bg-bone">
+                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">Email</th>
+                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">Name</th>
+                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">KYC Tier</th>
+                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">KYC Status</th>
+                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">Email</th>
+                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">Registered</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 10 }).map((_, i) => (
+                  <tr key={i} className="border-b border-bone-deep">
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-28" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-5 w-12 rounded-full" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-8" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-28" /></td>
+                  </tr>
+                ))
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-16 text-center text-muted-text text-sm">
+                    {debouncedQuery ? `No users found matching "${debouncedQuery}".` : "No users found."}
+                  </td>
+                </tr>
+              ) : (
+                users.map((user) => (
+                  <tr
+                    key={user.id}
+                    onClick={() => onSelectUser(user.id)}
+                    className="border-b border-bone-deep hover:bg-bone cursor-pointer transition-colors"
+                  >
+                    <td className="px-4 py-3 font-medium text-ink">{user.email}</td>
+                    <td className="px-4 py-3 text-ink-soft">
+                      {user.first_name} {user.last_name}
+                    </td>
+                    <td className="px-4 py-3 text-muted-text">Tier {user.kyc_tier}</td>
+                    <td className="px-4 py-3">
+                      {user.kyc_status
+                        ? <StatusBadge status={user.kyc_status as KYCStatus} />
+                        : <span className="text-xs text-muted-text">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {user.email_verified
+                        ? <CheckCircle className="size-4 text-emerald" />
+                        : <XCircle    className="size-4 text-clay" />}
+                    </td>
+                    <td className="px-4 py-3 text-muted-text">{fmtDate(user.created_at)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {!loading && userLastPage > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-bone-deep">
+            <p className="text-xs text-muted-text">
+              Page {userPage} of {userLastPage}
+            </p>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={userPage <= 1}
+                onClick={() => setUserPage((p) => p - 1)}
+                className="px-2"
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={userPage >= userLastPage}
+                onClick={() => setUserPage((p) => p + 1)}
+                className="px-2"
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function AdminKYCPageInner() {
   const router       = useRouter()
   const searchParams = useSearchParams()
 
+  const tab          = searchParams?.get("tab") ?? "records"
   const statusFilter = searchParams?.get("status") ?? ""
   const idTypeFilter = searchParams?.get("id_type") ?? ""
   const page         = Number(searchParams?.get("page") ?? "1")
@@ -365,6 +542,7 @@ function AdminKYCPageInner() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
   const loadRecords = useCallback(async () => {
+    if (tab !== "records") return
     setLoading(true)
     setError(null)
     try {
@@ -382,7 +560,7 @@ function AdminKYCPageInner() {
     } finally {
       setLoading(false)
     }
-  }, [page, statusFilter, idTypeFilter])
+  }, [tab, page, statusFilter, idTypeFilter])
 
   useEffect(() => { loadRecords() }, [loadRecords])
 
@@ -400,141 +578,177 @@ function AdminKYCPageInner() {
     router.push(`/admin/kyc?${p}`)
   }
 
+  function switchTab(newTab: string) {
+    router.push(`/admin/kyc?tab=${newTab}`)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold font-display text-ink">KYC Management</h1>
         <p className="text-sm text-muted-text mt-0.5">
-          {loading ? "Loading…" : `${total} record${total !== 1 ? "s" : ""}`}
+          Review KYC records and manage user verification
         </p>
       </div>
 
-      {/* Filter bar */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="w-44">
-          <Select
-            value={statusFilter || "all"}
-            onValueChange={(v) => setParam("status", v != null && v !== "all" ? v : "")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="PENDING">PENDING</SelectItem>
-              <SelectItem value="VERIFIED">VERIFIED</SelectItem>
-              <SelectItem value="FAILED">FAILED</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-40">
-          <Select
-            value={idTypeFilter || "all"}
-            onValueChange={(v) => setParam("id_type", v != null && v !== "all" ? v : "")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="All types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="BVN">BVN</SelectItem>
-              <SelectItem value="NIN">NIN</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {(statusFilter || idTypeFilter) && (
+      {/* Tab navigation */}
+      <div className="flex border-b border-bone-deep">
+        {(["records", "users"] as const).map((t) => (
           <button
-            onClick={() => router.push("/admin/kyc")}
-            className="text-xs text-ink-soft hover:text-ink underline underline-offset-2"
+            key={t}
+            onClick={() => switchTab(t)}
+            className={cn(
+              "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+              tab === t
+                ? "border-ink text-ink"
+                : "border-transparent text-muted-text hover:text-ink-soft"
+            )}
           >
-            Clear filters
+            {t === "records" ? "KYC Records" : "Users"}
           </button>
-        )}
+        ))}
       </div>
 
-      {error && !loading && <ErrorAlert message={error} onRetry={loadRecords} />}
-
-      {/* Table */}
-      <div className="bg-paper rounded-xl border-2 border-ink shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-bone-deep bg-bone">
-                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">User</th>
-                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">ID Type</th>
-                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">Status</th>
-                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">Verified at</th>
-                <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">Submitted</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                Array.from({ length: 10 }).map((_, i) => (
-                  <tr key={i} className="border-b border-bone-deep">
-                    <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-5 w-12 rounded-full" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-4 w-28" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-4 w-28" /></td>
-                  </tr>
-                ))
-              ) : records.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-16 text-center text-muted-text text-sm">
-                    No KYC records found.
-                  </td>
-                </tr>
-              ) : (
-                records.map((rec) => (
-                  <tr
-                    key={rec.id}
-                    onClick={() => setSelectedUserId(rec.user_id)}
-                    className="border-b border-bone-deep hover:bg-bone cursor-pointer transition-colors"
-                  >
-                    <td className="px-4 py-3 font-medium text-ink">{rec.user_email}</td>
-                    <td className="px-4 py-3"><IDTypeBadge type={rec.id_type} /></td>
-                    <td className="px-4 py-3"><StatusBadge status={rec.status} /></td>
-                    <td className="px-4 py-3 text-muted-text">{fmtDate(rec.verified_at)}</td>
-                    <td className="px-4 py-3 text-muted-text">{fmtDate(rec.created_at)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {!loading && lastPage > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-bone-deep">
-            <p className="text-xs text-muted-text">
-              Page {page} of {lastPage}
+      {/* KYC Records tab */}
+      {tab === "records" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-text">
+              {loading ? "Loading…" : `${total} record${total !== 1 ? "s" : ""}`}
             </p>
-            <div className="flex gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => goPage(page - 1)}
-                className="px-2"
-              >
-                <ChevronLeft className="size-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= lastPage}
-                onClick={() => goPage(page + 1)}
-                className="px-2"
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
           </div>
-        )}
-      </div>
 
-      {/* History / override dialog */}
+          {/* Filter bar */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="w-44">
+              <Select
+                value={statusFilter || "all"}
+                onValueChange={(v) => setParam("status", v != null && v !== "all" ? v : "")}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="PENDING">PENDING</SelectItem>
+                  <SelectItem value="VERIFIED">VERIFIED</SelectItem>
+                  <SelectItem value="FAILED">FAILED</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-40">
+              <Select
+                value={idTypeFilter || "all"}
+                onValueChange={(v) => setParam("id_type", v != null && v !== "all" ? v : "")}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All types</SelectItem>
+                  <SelectItem value="BVN">BVN</SelectItem>
+                  <SelectItem value="NIN">NIN</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {(statusFilter || idTypeFilter) && (
+              <button
+                onClick={() => router.push("/admin/kyc")}
+                className="text-xs text-ink-soft hover:text-ink underline underline-offset-2"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          {error && !loading && <ErrorAlert message={error} onRetry={loadRecords} />}
+
+          <div className="bg-paper rounded-xl border-2 border-ink shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-bone-deep bg-bone">
+                    <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">User</th>
+                    <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">ID Type</th>
+                    <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">Status</th>
+                    <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">Verified at</th>
+                    <th className="text-left px-4 py-3 font-semibold text-ink-soft text-xs uppercase tracking-wide">Submitted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    Array.from({ length: 10 }).map((_, i) => (
+                      <tr key={i} className="border-b border-bone-deep">
+                        <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
+                        <td className="px-4 py-3"><Skeleton className="h-5 w-12 rounded-full" /></td>
+                        <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                        <td className="px-4 py-3"><Skeleton className="h-4 w-28" /></td>
+                        <td className="px-4 py-3"><Skeleton className="h-4 w-28" /></td>
+                      </tr>
+                    ))
+                  ) : records.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-16 text-center text-muted-text text-sm">
+                        No KYC records found.
+                      </td>
+                    </tr>
+                  ) : (
+                    records.map((rec) => (
+                      <tr
+                        key={rec.id}
+                        onClick={() => setSelectedUserId(rec.user_id)}
+                        className="border-b border-bone-deep hover:bg-bone cursor-pointer transition-colors"
+                      >
+                        <td className="px-4 py-3 font-medium text-ink">{rec.user_email}</td>
+                        <td className="px-4 py-3"><IDTypeBadge type={rec.id_type} /></td>
+                        <td className="px-4 py-3"><StatusBadge status={rec.status} /></td>
+                        <td className="px-4 py-3 text-muted-text">{fmtDate(rec.verified_at)}</td>
+                        <td className="px-4 py-3 text-muted-text">{fmtDate(rec.created_at)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {!loading && lastPage > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-bone-deep">
+                <p className="text-xs text-muted-text">
+                  Page {page} of {lastPage}
+                </p>
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1}
+                    onClick={() => goPage(page - 1)}
+                    className="px-2"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= lastPage}
+                    onClick={() => goPage(page + 1)}
+                    className="px-2"
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Users tab */}
+      {tab === "users" && (
+        <UsersTab onSelectUser={(id) => setSelectedUserId(id)} />
+      )}
+
+      {/* History / override dialog — shared between both tabs */}
       <KYCHistoryDialog
         userId={selectedUserId}
         onClose={() => setSelectedUserId(null)}
