@@ -89,6 +89,7 @@ function formatTime(seconds: number): string {
 
 function maskRecipient(r: Recipient): string {
   const bd = r.bank_details
+  if (!bd) return `${r.first_name} ${r.last_name}`
   if (bd.mobileNumber) return `📱 ****${bd.mobileNumber.slice(-4)}`
   if (bd.iban) return `IBAN ****${bd.iban.slice(-4)}`
   if (bd.accountNumber) return `Acct ****${bd.accountNumber.slice(-4)}`
